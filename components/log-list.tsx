@@ -7,12 +7,21 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react'
+import { Trash2, CheckCircle2, Clock, AlertCircle, ArrowRight, Edit2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import EditLogDialog from '@/components/edit-log-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-export default function LogList({ refreshTrigger }: { refreshTrigger: number }) {
+export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigger: number; onLogUpdated: () => void }) {
   const [logs, setLogs] = useState<TimeLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingLog, setEditingLog] = useState<TimeLog | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchLogs()
@@ -49,25 +58,26 @@ export default function LogList({ refreshTrigger }: { refreshTrigger: number }) 
       setLogs(previousLogs)
     } else {
       toast.success('Task deleted')
+      onLogUpdated()
     }
   }
 
-  const handleStatusChange = async (log: TimeLog) => {
-    const statusOrder: TimeLog['progress'][] = ['In Progress', 'Completed', 'Blocked']
-    const currentIndex = statusOrder.indexOf(log.progress)
-    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length]
+  const handleStatusUpdate = async (log: TimeLog, newStatus: TimeLog['progress']) => {
+    if (log.progress === newStatus) return
 
     // Optimistic update
-    setLogs(logs.map(l => l.id === log.id ? { ...l, progress: nextStatus } : l))
+    setLogs(logs.map(l => l.id === log.id ? { ...l, progress: newStatus } : l))
 
     const { error } = await supabase
       .from('time_logs')
-      .update({ progress: nextStatus })
+      .update({ progress: newStatus })
       .eq('id', log.id)
 
     if (error) {
       toast.error('Failed to update status')
       fetchLogs() // Revert
+    } else {
+      onLogUpdated()
     }
   }
 
@@ -130,15 +140,52 @@ export default function LogList({ refreshTrigger }: { refreshTrigger: number }) 
                   {/* Right Section: Actions */}
                   <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                     <button
-                      onClick={() => handleStatusChange(log)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all hover:brightness-110 active:scale-95",
-                        getStatusColor(log.progress)
-                      )}
+                      onClick={() => {
+                        setEditingLog(log)
+                        setIsEditDialogOpen(true)
+                      }}
+                      className="p-2 rounded-full text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
+                      title="Edit Task"
                     >
-                      {getStatusIcon(log.progress)}
-                      {log.progress}
+                      <Edit2 className="w-4 h-4" />
                     </button>
+
+                    <div className="w-px h-8 bg-white/10 hidden md:block" />
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all hover:brightness-110 active:scale-95 outline-none focus:ring-2 focus:ring-white/20",
+                            getStatusColor(log.progress)
+                          )}
+                        >
+                          {getStatusIcon(log.progress)}
+                          {log.progress}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-[#0f0c29]/95 border-white/10 text-white backdrop-blur-xl shadow-2xl shadow-black/50">
+                        {(['In Progress', 'Completed', 'Blocked'] as const).map((status) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() => handleStatusUpdate(log, status)}
+                            className={cn(
+                              "flex items-center gap-2 cursor-pointer hover:bg-white/10 focus:bg-white/10 my-1 transition-colors duration-200",
+                              log.progress === status && "bg-white/5"
+                            )}
+                          >
+                            <div className={cn("p-1 rounded-full", 
+                              status === 'Completed' ? "text-green-400 bg-green-400/10" :
+                              status === 'Blocked' ? "text-red-400 bg-red-400/10" :
+                              "text-blue-400 bg-blue-400/10"
+                            )}>
+                              {getStatusIcon(status)}
+                            </div>
+                            <span>{status}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <div className="w-px h-8 bg-white/10 hidden md:block" />
 
@@ -163,6 +210,13 @@ export default function LogList({ refreshTrigger }: { refreshTrigger: number }) 
           </div>
         )}
       </div>
+      
+      <EditLogDialog 
+        log={editingLog} 
+        open={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        onLogUpdated={onLogUpdated} 
+      />
     </div>
   )
 }

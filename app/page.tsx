@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import TimeLogForm from '@/components/time-log-form'
 import LogList from '@/components/log-list'
+import AnalyticsDashboard from '@/components/analytics-dashboard'
 import ExportButton from '@/components/export-button'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
@@ -64,6 +65,9 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Analytics Section */}
+      <AnalyticsDashboard refreshTrigger={refreshTrigger} />
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Sidebar: Input Form */}
@@ -73,7 +77,7 @@ export default function Dashboard() {
 
         {/* Right Area: Log List */}
         <div className="lg:col-span-3">
-          <LogList refreshTrigger={refreshTrigger} />
+          <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
         </div>
       </div>
     </div>
