@@ -7,7 +7,7 @@ import TimeLogForm from '@/components/time-log-form'
 import LogList from '@/components/log-list'
 import AnalyticsDashboard from '@/components/analytics-dashboard'
 import UserStatusCard from '@/components/user-status-card'
-import FocusTimer from '@/components/focus-timer'
+import { CommandPalette } from '@/components/command-palette'
 import ExportButton from '@/components/export-button'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
@@ -41,12 +41,30 @@ export default function Dashboard() {
     setRefreshTrigger(prev => prev + 1)
   }
 
+  const handleLogTime = () => {
+    // Focus the title input of the form
+    const titleInput = document.querySelector('input[placeholder="Task Title"]') as HTMLInputElement
+    if (titleInput) {
+      titleInput.focus()
+      titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  const handleExport = () => {
+    // Trigger click on the export button
+    const exportBtn = document.querySelector('button[data-export-trigger]') as HTMLButtonElement
+    if (exportBtn) {
+      exportBtn.click()
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-white">Loading interface...</div>
   }
 
   return (
     <div className="min-h-screen p-4 space-y-4 relative">
+      <CommandPalette onLogTime={handleLogTime} onExport={handleExport} />
       <div className="gradient-bg" />
       {/* Header */}
       <header className="flex justify-between items-center glass-panel p-4 rounded-xl border-blue-500/20">
@@ -59,7 +77,9 @@ export default function Dashboard() {
         <div className="flex items-center gap-6">
           <p className="text-xs text-gray-400 hidden md:block">Welcome back, <span className="text-blue-400">{userEmail}</span></p>
           <div className="flex gap-3">
-            <ExportButton />
+            <div data-export-trigger onClick={() => document.getElementById('export-btn')?.click()}>
+               <ExportButton />
+            </div>
             <Button variant="ghost" onClick={handleLogout} className="text-gray-400 hover:text-white hover:bg-white/10">
               <LogOut className="h-4 w-4" />
             </Button>
