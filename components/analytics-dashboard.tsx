@@ -94,7 +94,10 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
     })
 
     const distributionChartData = Array.from(distributionMap.entries())
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ 
+        name: name.length > 15 ? name.substring(0, 15) + '...' : name, 
+        value 
+      }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5) // Top 5 tasks
 
