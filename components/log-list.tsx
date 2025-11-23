@@ -157,6 +157,21 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                       </div>
                     </div>
                     <p className="text-sm text-gray-400 line-clamp-1">{log.description}</p>
+                    
+                    {/* Tags & Category */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {log.category && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-white/10 text-white hover:bg-white/20">
+                          {log.category}
+                        </Badge>
+                      )}
+                      {log.tags && log.tags.map((tag, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-white/10 text-gray-400">
+                          #{tag}
+                        </Badge>
+                      ))}
+                    </div>
+
                     {(log.start_time || log.end_time) && (
                       <div className="text-xs text-blue-300/80 font-mono flex items-center gap-1">
                         {log.start_time} <ArrowRight className="w-3 h-3" /> {log.end_time}

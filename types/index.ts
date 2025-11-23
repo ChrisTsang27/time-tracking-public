@@ -9,6 +9,8 @@ export type TimeLog = {
   description: string
   progress: 'In Progress' | 'Completed' | 'Blocked'
   user_id: string
+  category?: string
+  tags?: string[]
 }
 
 export interface Profile {

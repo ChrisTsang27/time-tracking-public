@@ -7,6 +7,7 @@ import TimeLogForm from '@/components/time-log-form'
 import LogList from '@/components/log-list'
 import AnalyticsDashboard from '@/components/analytics-dashboard'
 import UserStatusCard from '@/components/user-status-card'
+import FocusTimer from '@/components/focus-timer'
 import ExportButton from '@/components/export-button'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
@@ -66,16 +67,15 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* RPG Status Card */}
-      <UserStatusCard refreshTrigger={refreshTrigger} />
-
       {/* Analytics Section */}
       <AnalyticsDashboard refreshTrigger={refreshTrigger} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Left Sidebar: Input Form */}
-        <div className="lg:col-span-1">
+        {/* Sidebar - 1 Column */}
+        <div className="lg:col-span-1 space-y-6">
+          <UserStatusCard refreshTrigger={refreshTrigger} />
+          {/* <FocusTimer /> */}
           <TimeLogForm onLogAdded={refreshData} />
         </div>
 

@@ -85,21 +85,17 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
     })
     setMonthlyData(monthlyChartData)
 
-    // 4. Task Distribution (By Title)
-    const distributionMap = new Map<string, number>()
+    // 4. Category Distribution
+    const categoryMap = new Map<string, number>()
+    
     data.forEach(log => {
-      const title = log.title || 'Untitled'
-      const hours = Number(log.hours) || 0
-      distributionMap.set(title, (distributionMap.get(title) || 0) + hours)
+      const category = log.category || 'Uncategorized'
+      categoryMap.set(category, (categoryMap.get(category) || 0) + (Number(log.hours) || 0))
     })
 
-    const distributionChartData = Array.from(distributionMap.entries())
-      .map(([name, value]) => ({ 
-        name: name.length > 15 ? name.substring(0, 15) + '...' : name, 
-        value 
-      }))
+    const distributionChartData = Array.from(categoryMap.entries())
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5) // Top 5 tasks
 
     setDistributionData(distributionChartData)
   }
@@ -261,7 +257,7 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
         </Card>
       </motion.div>
 
-      {/* Task Distribution (Pie Chart) */}
+      {/* Category Distribution (Pie Chart) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -272,7 +268,7 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
               <PieChartIcon className="w-4 h-4 text-green-400" />
-              Task Distribution
+              Category Distribution
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[120px] p-2">

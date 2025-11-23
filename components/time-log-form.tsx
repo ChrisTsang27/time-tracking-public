@@ -6,19 +6,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
-
+import { Plus, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { calculateStreak, XP_PER_HOUR } from '@/lib/gamification'
 
 export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) {
-  // ... existing state ...
   const [title, setTitle] = useState('')
   const [hours, setHours] = useState('')
   const [description, setDescription] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [category, setCategory] = useState('Work')
+  const [tags, setTags] = useState('')
   const [date, setDate] = useState(() => {
     const d = new Date()
     const year = d.getFullYear()
@@ -40,6 +41,12 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
       return
     }
 
+    // Calculate XP (100 XP per hour)
+    const xpEarned = Math.round(parseFloat(hours) * 100)
+    
+    // Process tags
+    const tagList = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+
     const { error } = await supabase.from('time_logs').insert({
       title,
       hours: parseFloat(hours),
@@ -48,7 +55,9 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
       start_time: startTime,
       end_time: endTime,
       progress: 'In Progress',
-      user_id: user.id
+      user_id: user.id,
+      category,
+      tags: tagList
     })
 
     if (error) {
@@ -63,7 +72,7 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
           .eq('id', user.id)
           .single()
 
-        let newXP = (profile?.xp || 0) + (parseFloat(hours) * XP_PER_HOUR)
+        let newXP = (profile?.xp || 0) + xpEarned
         let newStreak = profile?.current_streak || 0
         
         // Calculate Streak
@@ -86,7 +95,7 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
         if (profileError) console.error('Error updating profile:', profileError)
         else {
           if (streakChange === 1) toast.success('🔥 Streak Increased!')
-          toast.success(`+${parseFloat(hours) * XP_PER_HOUR} XP Gained!`)
+          toast.success(`+${xpEarned} XP Gained!`)
         }
       } catch (err) {
         console.error('Gamification error:', err)
@@ -99,6 +108,8 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
       setDescription('')
       setStartTime('')
       setEndTime('')
+      setTags('')
+      // Keep date and category as is for convenience
       onLogAdded()
     }
     setLoading(false)
@@ -111,80 +122,113 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
       transition={{ duration: 0.5 }}
     >
       <Card className="glass-panel border-white/10 text-white overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 opacity-50" />
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold neon-text flex items-center gap-2">
-            <span className="text-blue-400">➜</span> New Entry
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50" />
+        
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-bold neon-text">
+            <ArrowRight className="w-4 h-4 text-blue-400" />
+            New Entry
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">Title</label>
+        <CardContent className="p-4 pt-0">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Title</label>
               <Input
                 placeholder="Task Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">Date</label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Category</label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-full h-9 bg-black/30 border-white/10 text-white focus:border-blue-500/50 text-sm">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/90 border-white/10 text-white backdrop-blur-xl">
+                    <SelectItem value="Work">Work</SelectItem>
+                    <SelectItem value="Study">Study</SelectItem>
+                    <SelectItem value="Code">Code</SelectItem>
+                    <SelectItem value="Meeting">Meeting</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Tags</label>
+                <Input
+                  placeholder="react, db..."
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Date</label>
                 <Input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">Hours</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Hours</label>
                 <Input
                   type="number"
                   step="0.5"
                   placeholder="0.0"
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
                   required
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">Start Time</label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Start</label>
                 <Input
-                  placeholder="e.g. 9pm"
+                  placeholder="9:00 AM"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">End Time</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">End</label>
                 <Input
-                  placeholder="e.g. 11pm"
+                  placeholder="5:00 PM"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium">Description</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Description</label>
               <Textarea
                 placeholder="Task details..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-black/30 border-white/10 text-white min-h-[100px] focus:border-blue-500/50 transition-colors resize-none"
+                className="bg-black/30 border-white/10 text-white min-h-[80px] focus:border-blue-500/50 transition-colors resize-none text-sm"
                 required
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-blue-50 hover:text-blue-900 transition-all duration-300 font-medium">
-              <Plus className="mr-2 h-4 w-4" />
+
+            <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-blue-50 hover:text-blue-900 transition-all duration-300 font-medium h-9 text-sm">
+              <Plus className="mr-2 h-3 w-3" />
               {loading ? 'Processing...' : 'Log Time'}
             </Button>
           </form>
