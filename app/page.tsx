@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import TimeLogForm from '@/components/time-log-form'
 import LogList from '@/components/log-list'
 import AnalyticsDashboard from '@/components/analytics-dashboard'
+import UserStatusCard from '@/components/user-status-card'
 import ExportButton from '@/components/export-button'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
@@ -44,12 +45,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen p-6 space-y-8 relative">
+    <div className="min-h-screen p-4 space-y-4 relative">
       <div className="gradient-bg" />
       {/* Header */}
-      <header className="flex justify-between items-center glass-panel p-6 rounded-xl border-blue-500/20">
+      <header className="flex justify-between items-center glass-panel p-4 rounded-xl border-blue-500/20">
         <div>
-          <h1 className="text-4xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+          <h1 className="text-2xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
             CHRONO<span className="text-white">SYNC</span>
           </h1>
           <p className="text-gray-400 text-sm mt-1 tracking-wider">PERSONAL TIME TRACKING TERMINAL</p>
@@ -65,11 +66,14 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* RPG Status Card */}
+      <UserStatusCard refreshTrigger={refreshTrigger} />
+
       {/* Analytics Section */}
       <AnalyticsDashboard refreshTrigger={refreshTrigger} />
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Left Sidebar: Input Form */}
         <div className="lg:col-span-1">
           <TimeLogForm onLogAdded={refreshData} />

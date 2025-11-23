@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Trash2, CheckCircle2, Clock, AlertCircle, ArrowRight, Edit2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import EditLogDialog from '@/components/edit-log-dialog'
+import { formatDistanceToNow } from 'date-fns'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,7 +107,7 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
         </Badge>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AnimatePresence mode="popLayout">
           {logs.map((log, index) => (
             <motion.div
@@ -115,17 +116,37 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="h-full"
             >
-              <Card className="glass-panel border-white/5 hover:border-white/20 transition-all duration-300 group">
-                <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <Card className={cn(
+                "glass-panel transition-all duration-300 group relative overflow-hidden h-full",
+                index === 0 ? "border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.1)]" : "border-white/5 hover:border-white/20"
+              )}>
+                {/* Sequence Number Watermark */}
+                <div className="absolute -right-4 -top-4 text-[60px] font-bold text-white/[0.02] pointer-events-none select-none">
+                  #{index + 1}
+                </div>
+
+                <CardContent className="p-4 flex flex-col justify-between h-full gap-4 relative z-10">
                   
                   {/* Left Section: Info */}
                   <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-gray-600 mr-1">#{index + 1}</span>
                       <h3 className="text-lg font-medium text-white truncate">{log.title || 'Untitled Task'}</h3>
-                      <Badge variant="outline" className="border-white/10 text-gray-400 text-xs font-mono">
-                        {log.date}
-                      </Badge>
+                      {index === 0 && (
+                        <span className="bg-blue-500/20 text-blue-300 border border-blue-500/50 text-[10px] px-1.5 py-0.5 rounded animate-pulse font-bold">
+                          NEW
+                        </span>
+                      )}
+                      <div className="ml-auto flex items-center gap-2">
+                         <span className="text-[10px] text-gray-500 font-mono hidden md:inline-block">
+                          {log.date}
+                        </span>
+                        <Badge variant="outline" className="border-white/10 text-blue-300 text-xs font-mono bg-blue-500/5">
+                          {formatDistanceToNow(new Date(log.created_at || log.date), { addSuffix: true })}
+                        </Badge>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-400 line-clamp-1">{log.description}</p>
                     {(log.start_time || log.end_time) && (
@@ -137,8 +158,8 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                     )}
                   </div>
 
-                  {/* Right Section: Actions */}
-                  <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                  {/* Actions - Bottom Row */}
+                  <div className="flex items-center justify-between w-full pt-4 border-t border-white/5 mt-auto">
                     <button
                       onClick={() => {
                         setEditingLog(log)
@@ -149,8 +170,6 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-
-                    <div className="w-px h-8 bg-white/10 hidden md:block" />
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -186,8 +205,6 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-
-                    <div className="w-px h-8 bg-white/10 hidden md:block" />
 
                     <button
                       onClick={() => handleDelete(log.id)}

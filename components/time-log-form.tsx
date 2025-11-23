@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 
 import { motion } from 'framer-motion'
+import { calculateStreak, XP_PER_HOUR } from '@/lib/gamification'
 
 export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) {
   // ... existing state ...
@@ -53,6 +54,45 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
     if (error) {
       toast.error(error.message)
     } else {
+      // --- GAMIFICATION LOGIC START ---
+      try {
+        // 1. Get current profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        let newXP = (profile?.xp || 0) + (parseFloat(hours) * XP_PER_HOUR)
+        let newStreak = profile?.current_streak || 0
+        
+        // Calculate Streak
+        const streakChange = calculateStreak(profile?.last_log_date || null, date)
+        if (streakChange === 1) newStreak += 1
+        else if (streakChange === -1) newStreak = 1 // Reset to 1 if broken
+        else if (newStreak === 0) newStreak = 1 // First ever log
+
+        // 2. Update or Insert Profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            xp: newXP,
+            current_streak: newStreak,
+            last_log_date: date
+          })
+
+        if (profileError) console.error('Error updating profile:', profileError)
+        else {
+          if (streakChange === 1) toast.success('🔥 Streak Increased!')
+          toast.success(`+${parseFloat(hours) * XP_PER_HOUR} XP Gained!`)
+        }
+      } catch (err) {
+        console.error('Gamification error:', err)
+      }
+      // --- GAMIFICATION LOGIC END ---
+
       toast.success('Log added successfully')
       setTitle('')
       setHours('')

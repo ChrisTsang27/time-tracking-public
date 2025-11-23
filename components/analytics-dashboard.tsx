@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TimeLog } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Loader2, TrendingUp, Clock, Activity } from 'lucide-react'
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  LineChart, Line, PieChart, Pie, Legend
+} from 'recharts'
+import { Loader2, TrendingUp, Clock, Activity, PieChart as PieChartIcon, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger: number }) {
@@ -13,6 +16,8 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
   const [loading, setLoading] = useState(true)
   const [totalHours, setTotalHours] = useState(0)
   const [weeklyData, setWeeklyData] = useState<{ day: string; hours: number; fullDate: string }[]>([])
+  const [monthlyData, setMonthlyData] = useState<{ date: string; hours: number }[]>([])
+  const [distributionData, setDistributionData] = useState<{ name: string; value: number }[]>([])
 
   useEffect(() => {
     fetchData()
@@ -42,24 +47,58 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
     const last7Days = [...Array(7)].map((_, i) => {
       const d = new Date()
       d.setDate(d.getDate() - i)
-      // Use local time YYYY-MM-DD
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
       return `${year}-${month}-${day}`
     }).reverse()
 
-    const chartData = last7Days.map(date => {
+    const weeklyChartData = last7Days.map(date => {
       const dayLogs = data.filter(log => log.date === date)
       const dayHours = dayLogs.reduce((sum, log) => sum + (Number(log.hours) || 0), 0)
       return {
-        day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }), // Mon, Tue
+        day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
         fullDate: date,
         hours: dayHours
       }
     })
+    setWeeklyData(weeklyChartData)
 
-    setWeeklyData(chartData)
+    // 3. Monthly Activity (Last 30 Days)
+    const last30Days = [...Array(30)].map((_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }).reverse()
+
+    const monthlyChartData = last30Days.map(date => {
+      const dayLogs = data.filter(log => log.date === date)
+      const dayHours = dayLogs.reduce((sum, log) => sum + (Number(log.hours) || 0), 0)
+      return {
+        date: new Date(date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
+        fullDate: date,
+        hours: dayHours
+      }
+    })
+    setMonthlyData(monthlyChartData)
+
+    // 4. Task Distribution (By Title)
+    const distributionMap = new Map<string, number>()
+    data.forEach(log => {
+      const title = log.title || 'Untitled'
+      const hours = Number(log.hours) || 0
+      distributionMap.set(title, (distributionMap.get(title) || 0) + hours)
+    })
+
+    const distributionChartData = Array.from(distributionMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5) // Top 5 tasks
+
+    setDistributionData(distributionChartData)
   }
 
   if (loading) {
@@ -74,10 +113,10 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
     if (active && payload && payload.length) {
       return (
         <div className="bg-black/90 border border-white/10 p-3 rounded-lg shadow-xl backdrop-blur-md">
-          <p className="text-gray-400 text-xs mb-1">{payload[0].payload.fullDate}</p>
+          <p className="text-gray-400 text-xs mb-1">{payload[0].payload.fullDate || payload[0].name}</p>
           <p className="text-white font-bold flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400" />
-            {payload[0].value} hours
+            {payload[0].value.toFixed(1)} hours
           </p>
         </div>
       )
@@ -85,8 +124,10 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
     return null
   }
 
+  const COLORS = ['#8b5cf6', '#3b82f6', '#ec4899', '#10b981', '#f59e0b']
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       {/* Total Hours Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -99,11 +140,11 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
           <CardHeader className="pb-2 relative z-10">
             <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
               <Clock className="w-4 h-4 text-blue-400" />
-              Total Hours Logged
+              Total Hours
             </CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-5xl font-bold text-white neon-text tracking-tight">
+          <CardContent className="relative z-10 p-4">
+            <div className="text-3xl font-bold text-white neon-text tracking-tight">
               {totalHours.toFixed(1)}<span className="text-xl text-gray-500 font-normal ml-1">h</span>
             </div>
             <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
@@ -119,7 +160,7 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="md:col-span-2"
+        className="md:col-span-1"
       >
         <Card className="glass-panel border-purple-500/20 h-full relative overflow-hidden hover:border-purple-500/40 transition-colors duration-500">
           <CardHeader className="pb-2">
@@ -128,7 +169,7 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
               Weekly Activity
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[140px]">
+          <CardContent className="h-[120px] p-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
@@ -148,7 +189,7 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
                   tickFormatter={(value: number) => `${value}h`}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                <Bar dataKey="hours" radius={[4, 4, 0, 0]} maxBarSize={50} animationDuration={1500}>
+                <Bar dataKey="hours" radius={[2, 2, 0, 0]} maxBarSize={12} animationDuration={1500}>
                   {weeklyData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={`url(#colorGradient-${index})`} />
                   ))}
@@ -162,6 +203,101 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
                   ))}
                 </defs>
               </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Monthly Activity (Line Chart) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="md:col-span-1"
+      >
+        <Card className="glass-panel border-pink-500/20 h-full relative overflow-hidden hover:border-pink-500/40 transition-colors duration-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-pink-400" />
+              Monthly Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[120px] p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#6b7280" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                  dy={10}
+                  interval={6}
+                />
+                <YAxis 
+                  stroke="#6b7280" 
+                  fontSize={10} 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickFormatter={(value: number) => `${value}h`}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }} />
+                <Line 
+                  type="monotone" 
+                  dataKey="hours" 
+                  stroke="#ec4899" 
+                  strokeWidth={1.5} 
+                  dot={false} 
+                  activeDot={{ r: 4, fill: '#ec4899', stroke: '#fff' }} 
+                  animationDuration={1500}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Task Distribution (Pie Chart) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        className="md:col-span-1"
+      >
+        <Card className="glass-panel border-green-500/20 h-full relative overflow-hidden hover:border-green-500/40 transition-colors duration-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <PieChartIcon className="w-4 h-4 text-green-400" />
+              Task Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[120px] p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={distributionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={42}
+                  outerRadius={50}
+                  paddingAngle={5}
+                  dataKey="value"
+                  animationDuration={1500}
+                >
+                  {distributionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0.5)" />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="middle" 
+                  align="right" 
+                  layout="vertical"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '10px', color: '#9ca3af' }}
+                />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

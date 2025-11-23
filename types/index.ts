@@ -11,7 +11,11 @@ export type TimeLog = {
   user_id: string
 }
 
-export type UserProfile = {
+export interface Profile {
   id: string
   email: string
+  xp: number
+  level: number
+  current_streak: number
+  last_log_date: string | null
 }
