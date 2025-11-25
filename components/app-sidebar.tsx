@@ -13,12 +13,12 @@ export default function AppSidebar({ activeView, onViewChange }: AppSidebarProps
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'records', label: 'Records', icon: FileText },
-    { id: 'projects', label: 'Projects', icon: FolderKanban },
+    // { id: 'projects', label: 'Projects', icon: FolderKanban }, // Hidden for now
     { id: 'export', label: 'Export', icon: Download },
   ]
 
   return (
-    <aside className="w-64 glass-panel border-r border-white/10 p-4 flex flex-col">
+    <aside className="w-64 h-full glass-panel border-r border-white/10 p-4 flex flex-col">
       <nav className="flex-1 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon

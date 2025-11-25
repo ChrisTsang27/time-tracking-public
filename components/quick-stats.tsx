@@ -123,21 +123,21 @@ export default function QuickStats({ refreshTrigger }: QuickStatsProps) {
         <TrendingUp className="w-5 h-5 text-green-400" />
         Quick Stats
       </h3>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon
           return (
             <div
               key={index}
-              className={`p-4 rounded-lg bg-gradient-to-br ${stat.bg} border border-white/10 hover:border-white/20 transition-all`}
+              className={`p-4 rounded-lg bg-gradient-to-br ${stat.bg} border border-white/10 hover:border-white/20 transition-all flex items-center justify-center`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} />
-                <span className="text-xs text-gray-400">{stat.label}</span>
+              <div className="flex flex-col items-center text-center">
+                <Icon className={`w-5 h-5 mb-2 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} />
+                <span className="text-xs text-gray-400 mb-1">{stat.label}</span>
+                <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent tabular-nums`}>
+                  {stat.value}
+                </p>
               </div>
-              <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
-                {stat.value}
-              </p>
             </div>
           )
         })}

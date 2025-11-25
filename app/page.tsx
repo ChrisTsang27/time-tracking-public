@@ -13,6 +13,8 @@ import DailyKickoff from '@/components/daily-kickoff'
 import EndOfDayReflection from '@/components/end-of-day-reflection'
 import QuickStats from '@/components/quick-stats'
 import ExportButton from '@/components/export-button'
+import { Menu, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [logDialogOpen, setLogDialogOpen] = useState(false)
   const [showKickoff, setShowKickoff] = useState(false)
   const [showReflection, setShowReflection] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -139,9 +142,29 @@ export default function Dashboard() {
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <AppSidebar activeView={activeView} onViewChange={setActiveView} />
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Sidebar */}
+        <div className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-auto transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+          <AppSidebar activeView={activeView} onViewChange={(view) => { setActiveView(view); setSidebarOpen(false); }} />
+        </div>
+        
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+          {/* Mobile menu button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden mb-4"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
           {activeView === 'dashboard' && (
             <>
               {/* KPI Summary */}

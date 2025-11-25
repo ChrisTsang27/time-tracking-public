@@ -48,15 +48,17 @@ export default function AppHeader({ userEmail, onLogout, onAddRecord, refreshTri
   }
 
   return (
-    <header className="h-16 glass-panel border-b border-white/10 flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+    <header className="h-14 sm:h-16 glass-panel border-b border-white/10 flex items-center justify-between px-3 sm:px-6">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <h1 className="text-base sm:text-xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
           CHRONO<span className="text-white">SYNC</span>
         </h1>
+        {/* Project selector - hidden for now
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
           <span className="text-xs text-gray-500">PROJECT:</span>
           <span className="text-sm text-white font-medium">Personal</span>
         </div>
+        */}
         
         {/* Time Weaver - Compact Header Version */}
         <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30">
@@ -78,18 +80,18 @@ export default function AppHeader({ userEmail, onLogout, onAddRecord, refreshTri
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           onClick={onAddRecord}
+          size="sm"
           className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-blue-500/20"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Record
+          <Plus className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Add Record</span>
         </Button>
         
-        
         {/* Dialog Triggers */}
-        <div className="hidden xl:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
