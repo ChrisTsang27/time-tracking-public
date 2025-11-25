@@ -3,11 +3,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TimeLog } from '@/types'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, CheckCircle2, Clock, AlertCircle, ArrowRight, Edit2 } from 'lucide-react'
+import { Trash2, CheckCircle2, Clock, AlertCircle, Edit2, MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import EditLogDialog from '@/components/edit-log-dialog'
 import LogDetailsDialog from '@/components/log-details-dialog'
@@ -69,7 +67,6 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
   const handleStatusUpdate = async (log: TimeLog, newStatus: TimeLog['progress']) => {
     if (log.progress === newStatus) return
 
-    // Optimistic update
     setLogs(logs.map(l => l.id === log.id ? { ...l, progress: newStatus } : l))
 
     const { error } = await supabase
@@ -79,7 +76,7 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
 
     if (error) {
       toast.error('Failed to update status')
-      fetchLogs() // Revert
+      fetchLogs()
     } else {
       onLogUpdated()
     }
@@ -95,120 +92,109 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Completed': return <CheckCircle2 className="w-4 h-4" />
-      case 'Blocked': return <AlertCircle className="w-4 h-4" />
-      default: return <Clock className="w-4 h-4" />
+      case 'Completed': return <CheckCircle2 className="w-3.5 h-3.5" />
+      case 'Blocked': return <AlertCircle className="w-3.5 h-3.5" />
+      default: return <Clock className="w-3.5 h-3.5" />
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-white neon-text">Task Log</h2>
         <Badge variant="outline" className="border-white/20 text-gray-400">
           {logs.length} Entries
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence mode="popLayout">
-          {logs.map((log, index) => (
-            <motion.div
-              key={log.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="h-full"
-            >
-              <Card 
-                onClick={() => {
-                  setViewingLog(log)
-                  setIsViewDialogOpen(true)
-                }}
-                className={cn(
-                "glass-panel transition-all duration-300 group relative overflow-hidden h-full cursor-pointer hover:bg-white/5",
-                index === 0 ? "border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.1)]" : "border-white/5 hover:border-white/20"
-              )}>
-                {/* Sequence Number Watermark */}
-                <div className="absolute -right-4 -top-4 text-[60px] font-bold text-white/[0.02] pointer-events-none select-none">
-                  #{index + 1}
-                </div>
-
-                <CardContent className="p-4 flex flex-col justify-between h-full gap-4 relative z-10">
-                  
-                  {/* Left Section: Info */}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-600 mr-1">#{index + 1}</span>
-                      <h3 className="text-lg font-medium text-white line-clamp-2 leading-tight" title={log.title}>{log.title || 'Untitled Task'}</h3>
-                      {index === 0 && (
-                        <span className="bg-blue-500/20 text-blue-300 border border-blue-500/50 text-[10px] px-1.5 py-0.5 rounded animate-pulse font-bold">
-                          NEW
-                        </span>
-                      )}
-                      <div className="ml-auto flex items-center gap-2">
-                         <span className="text-[10px] text-gray-500 font-mono hidden md:inline-block">
-                          {log.date}
-                        </span>
-                        <Badge variant="outline" className="border-white/10 text-blue-300 text-xs font-mono bg-blue-500/5">
-                          {formatDistanceToNow(new Date(log.created_at || log.date), { addSuffix: true })}
-                        </Badge>
+      <div className="glass-panel rounded-xl border-white/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/10 bg-white/5">
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Task</th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Category</th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Hours</th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Time</th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="text-right p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, index) => (
+                <tr
+                  key={log.id}
+                  onClick={() => {
+                    setViewingLog(log)
+                    setIsViewDialogOpen(true)
+                  }}
+                  className={cn(
+                    "border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer",
+                    index === 0 && "bg-blue-500/5"
+                  )}
+                >
+                  <td className="p-3">
+                    <span className="text-xs font-mono text-gray-500">#{index + 1}</span>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white line-clamp-1">{log.title || 'Untitled Task'}</span>
+                        {index === 0 && (
+                          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/50 text-[9px] px-1 py-0 h-4">
+                            NEW
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                    <p className="text-sm text-gray-400 line-clamp-1">{log.description}</p>
-                    
-                    {/* Tags & Category */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {log.category && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-white/10 text-white hover:bg-white/20">
-                          {log.category}
-                        </Badge>
+                      {log.description && (
+                        <p className="text-xs text-gray-400 line-clamp-1">{log.description}</p>
                       )}
-                      {log.tags && log.tags.map((tag, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-white/10 text-gray-400">
-                          #{tag}
-                        </Badge>
-                      ))}
+                      {log.tags && log.tags.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {log.tags.slice(0, 3).map((tag, i) => (
+                            <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-white/10 text-gray-500">
+                              #{tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
-
-                    {(log.start_time || log.end_time) && (
-                      <div className="text-xs text-blue-300/80 font-mono flex items-center gap-1">
-                        {log.start_time} <ArrowRight className="w-3 h-3" /> {log.end_time}
-                        <span className="text-gray-500 mx-2">|</span>
-                        <span className="text-white">{log.hours}h</span>
-                      </div>
+                  </td>
+                  <td className="p-3 hidden md:table-cell">
+                    {log.category && (
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-white/10 text-white">
+                        {log.category}
+                      </Badge>
                     )}
-                  </div>
-
-                  {/* Actions - Bottom Row */}
-                  <div className="flex items-center justify-between w-full pt-4 border-t border-white/5 mt-auto">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingLog(log)
-                        setIsEditDialogOpen(true)
-                      }}
-                      className="p-2 rounded-full text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
-                      title="Edit Task"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-
+                  </td>
+                  <td className="p-3">
+                    <span className="text-sm font-semibold text-white">{log.hours}h</span>
+                  </td>
+                  <td className="p-3 hidden lg:table-cell">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs text-blue-300 font-mono">
+                        {log.start_time} - {log.end_time}
+                      </span>
+                      <span className="text-[10px] text-gray-500">
+                        {formatDistanceToNow(new Date(log.created_at || log.date), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-3">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={(e) => e.stopPropagation()}
                           className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all hover:brightness-110 active:scale-95 outline-none focus:ring-2 focus:ring-white/20",
+                            "flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium border transition-all hover:brightness-110",
                             getStatusColor(log.progress)
                           )}
                         >
                           {getStatusIcon(log.progress)}
-                          {log.progress}
+                          <span className="hidden sm:inline">{log.progress}</span>
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#0f0c29]/95 border-white/10 text-white backdrop-blur-xl shadow-2xl shadow-black/50">
+                      <DropdownMenuContent align="end" className="bg-[#0f0c29]/95 border-white/10 text-white backdrop-blur-xl">
                         {(['In Progress', 'Completed', 'Blocked'] as const).map((status) => (
                           <DropdownMenuItem
                             key={status}
@@ -217,7 +203,7 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                               handleStatusUpdate(log, status)
                             }}
                             className={cn(
-                              "flex items-center gap-2 cursor-pointer hover:bg-white/10 focus:bg-white/10 my-1 transition-colors duration-200",
+                              "flex items-center gap-2 cursor-pointer hover:bg-white/10",
                               log.progress === status && "bg-white/5"
                             )}
                           >
@@ -233,24 +219,37 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(log.id)
-                      }}
-                      className="p-2 rounded-full text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                      title="Delete Task"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingLog(log)
+                          setIsEditDialogOpen(true)
+                        }}
+                        className="p-1.5 rounded hover:bg-blue-400/10 text-gray-500 hover:text-blue-400 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(log.id)
+                        }}
+                        className="p-1.5 rounded hover:bg-red-400/10 text-gray-500 hover:text-red-400 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         
         {!loading && logs.length === 0 && (
           <div className="text-center py-12 text-gray-500">

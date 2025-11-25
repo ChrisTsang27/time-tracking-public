@@ -3,24 +3,72 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import TimeLogForm from '@/components/time-log-form'
+import AppSidebar from '@/components/app-sidebar'
+import AppHeader from '@/components/app-header'
+import TimeLogDialog from '@/components/time-log-dialog'
 import LogList from '@/components/log-list'
 import AnalyticsDashboard from '@/components/analytics-dashboard'
-import UserStatusCard from '@/components/user-status-card'
 import { CommandPalette } from '@/components/command-palette'
+import DailyKickoff from '@/components/daily-kickoff'
+import EndOfDayReflection from '@/components/end-of-day-reflection'
+import QuickStats from '@/components/quick-stats'
 import ExportButton from '@/components/export-button'
-import { Button } from '@/components/ui/button'
-import { LogOut } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState('dashboard')
+  const [logDialogOpen, setLogDialogOpen] = useState(false)
+  const [showKickoff, setShowKickoff] = useState(false)
+  const [showReflection, setShowReflection] = useState(false)
 
   useEffect(() => {
     checkUser()
+    checkDailyKickoff()
+    checkEveningReflection()
   }, [])
+
+  const checkDailyKickoff = () => {
+    const hour = new Date().getHours()
+    const today = new Date().toISOString().split('T')[0]
+    const lastShown = localStorage.getItem('lastKickoffDate')
+    
+    // Only show in the morning (before 6 PM) and once per day
+    if (hour < 18 && lastShown !== today) {
+      setTimeout(() => setShowKickoff(true), 500)
+    }
+  }
+
+  const handleDismissKickoff = () => {
+    const today = new Date().toISOString().split('T')[0]
+    localStorage.setItem('lastKickoffDate', today)
+    setShowKickoff(false)
+  }
+
+  const checkEveningReflection = () => {
+    const hour = new Date().getHours()
+    const today = new Date().toISOString().split('T')[0]
+    const lastShown = localStorage.getItem('lastReflectionDate')
+    const kickoffShown = localStorage.getItem('lastKickoffDate')
+    
+    // Show after 6 PM, only once per day
+    // Allow if kickoff was shown today OR if it's evening (too late for kickoff)
+    if (hour >= 18 && lastShown !== today) {
+      // If kickoff was already shown today, or it's past kickoff time anyway
+      const canShow = kickoffShown === today || hour >= 18
+      if (canShow) {
+        setTimeout(() => setShowReflection(true), 1000)
+      }
+    }
+  }
+
+  const handleDismissReflection = () => {
+    const today = new Date().toISOString().split('T')[0]
+    localStorage.setItem('lastReflectionDate', today)
+    setShowReflection(false)
+  }
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -42,16 +90,10 @@ export default function Dashboard() {
   }
 
   const handleLogTime = () => {
-    // Focus the title input of the form
-    const titleInput = document.querySelector('input[placeholder="Task Title"]') as HTMLInputElement
-    if (titleInput) {
-      titleInput.focus()
-      titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
+    setLogDialogOpen(true)
   }
 
   const handleExport = () => {
-    // Trigger click on the export button
     const exportBtn = document.querySelector('button[data-export-trigger]') as HTMLButtonElement
     if (exportBtn) {
       exportBtn.click()
@@ -63,46 +105,81 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen p-4 space-y-4 relative">
-      <CommandPalette onLogTime={handleLogTime} onExport={handleExport} />
+    <div className="min-h-screen flex flex-col relative">
+      {showKickoff && userEmail && (
+        <DailyKickoff 
+          userName={userEmail} 
+          onStartTask={handleLogTime}
+          onDismiss={handleDismissKickoff}
+        />
+      )}
+      {showReflection && (
+        <EndOfDayReflection onDismiss={handleDismissReflection} />
+      )}
+      <CommandPalette 
+        onLogTime={handleLogTime} 
+        onExport={handleExport}
+        onShowKickoff={() => setShowKickoff(true)}
+        onShowReflection={() => setShowReflection(true)}
+      />
+      <TimeLogDialog 
+        open={logDialogOpen} 
+        onOpenChange={setLogDialogOpen} 
+        onLogAdded={refreshData} 
+      />
       <div className="gradient-bg" />
-      {/* Header */}
-      <header className="flex justify-between items-center glass-panel p-4 rounded-xl border-blue-500/20">
-        <div>
-          <h1 className="text-2xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-            CHRONO<span className="text-white">SYNC</span>
-          </h1>
-          <p className="text-gray-400 text-sm mt-1 tracking-wider">PERSONAL TIME TRACKING TERMINAL</p>
-        </div>
-        <div className="flex items-center gap-6">
-          <p className="text-xs text-gray-400 hidden md:block">Welcome back, <span className="text-blue-400">{userEmail}</span></p>
-          <div className="flex gap-3">
-            <div data-export-trigger onClick={() => document.getElementById('export-btn')?.click()}>
-               <ExportButton />
+      
+      <AppHeader 
+        userEmail={userEmail} 
+        onLogout={handleLogout} 
+        onAddRecord={() => setLogDialogOpen(true)}
+        refreshTrigger={refreshTrigger}
+        onShowKickoff={() => setShowKickoff(true)}
+        onShowReflection={() => setShowReflection(true)}
+      />
+      
+      <div className="flex flex-1 overflow-hidden">
+        <AppSidebar activeView={activeView} onViewChange={setActiveView} />
+        
+        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+          {activeView === 'dashboard' && (
+            <>
+              {/* KPI Summary */}
+              <QuickStats refreshTrigger={refreshTrigger} />
+
+              {/* Analytics Charts */}
+              <AnalyticsDashboard refreshTrigger={refreshTrigger} />
+
+              {/* Recent Sessions */}
+              <div>
+                <h2 className="text-lg font-bold text-white mb-4">Recent Sessions</h2>
+                <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
+              </div>
+            </>
+          )}
+
+          {activeView === 'records' && (
+            <>
+              <h2 className="text-2xl font-bold text-white mb-4">All Records</h2>
+              <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
+            </>
+          )}
+
+          {activeView === 'projects' && (
+            <div className="glass-panel p-8 rounded-xl border-white/10 text-center">
+              <h2 className="text-2xl font-bold text-white mb-2">Projects</h2>
+              <p className="text-gray-400">Project management coming soon...</p>
             </div>
-            <Button variant="ghost" onClick={handleLogout} className="text-gray-400 hover:text-white hover:bg-white/10">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+          )}
 
-      {/* Analytics Section */}
-      <AnalyticsDashboard refreshTrigger={refreshTrigger} />
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Sidebar - 1 Column */}
-        <div className="lg:col-span-1 space-y-6">
-          <UserStatusCard refreshTrigger={refreshTrigger} />
-          {/* <FocusTimer /> */}
-          <TimeLogForm onLogAdded={refreshData} />
-        </div>
-
-        {/* Right Area: Log List */}
-        <div className="lg:col-span-3">
-          <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
-        </div>
+          {activeView === 'export' && (
+            <div className="glass-panel p-8 rounded-xl border-white/10">
+              <h2 className="text-2xl font-bold text-white mb-4">Export Data</h2>
+              <p className="text-gray-400 mb-6">Download your time logs in various formats</p>
+              <ExportButton />
+            </div>
+          )}
+        </main>
       </div>
     </div>
   )

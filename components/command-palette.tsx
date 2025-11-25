@@ -13,7 +13,9 @@ import {
   Clock,
   Moon,
   Sun,
-  Laptop
+  Laptop,
+  Sunrise,
+  Sunset
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -31,9 +33,11 @@ import {
 interface CommandPaletteProps {
   onLogTime: () => void
   onExport: () => void
+  onShowKickoff: () => void
+  onShowReflection: () => void
 }
 
-export function CommandPalette({ onLogTime, onExport }: CommandPaletteProps) {
+export function CommandPalette({ onLogTime, onExport, onShowKickoff, onShowReflection }: CommandPaletteProps) {
   const [open, setOpen] = React.useState(false)
   const { setTheme } = useTheme()
 
@@ -74,6 +78,24 @@ export function CommandPalette({ onLogTime, onExport }: CommandPaletteProps) {
             <Download className="mr-2 h-4 w-4" />
             <span>Export Data</span>
             <CommandShortcut>⌘E</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => {
+              onShowKickoff()
+              setOpen(false)
+            }}
+          >
+            <Sunrise className="mr-2 h-4 w-4" />
+            <span>Daily Kickoff</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => {
+              onShowReflection()
+              setOpen(false)
+            }}
+          >
+            <Sunset className="mr-2 h-4 w-4" />
+            <span>End of Day Review</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
