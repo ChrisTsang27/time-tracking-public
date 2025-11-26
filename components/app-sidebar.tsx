@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Home, FileText, FolderKanban, Download, ChevronRight } from 'lucide-react'
+import { Home, FileText, FolderKanban, Download, ChevronRight, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AppSidebarProps {
@@ -12,6 +12,7 @@ interface AppSidebarProps {
 export default function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'records', label: 'Records', icon: FileText },
     // { id: 'projects', label: 'Projects', icon: FolderKanban }, // Hidden for now
     { id: 'export', label: 'Export', icon: Download },

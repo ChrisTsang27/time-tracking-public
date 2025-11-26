@@ -34,6 +34,7 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
     const { data, error } = await supabase
       .from('time_logs')
       .select('*')
+      .order('date', { ascending: false })
       .order('created_at', { ascending: false })
 
     if (error) {

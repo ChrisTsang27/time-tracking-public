@@ -7,9 +7,10 @@ interface TimeLogDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onLogAdded: () => void
+  defaultDate?: string
 }
 
-export default function TimeLogDialog({ open, onOpenChange, onLogAdded }: TimeLogDialogProps) {
+export default function TimeLogDialog({ open, onOpenChange, onLogAdded, defaultDate }: TimeLogDialogProps) {
   const handleLogAdded = () => {
     onLogAdded()
     onOpenChange(false) // Close dialog after successful log
@@ -23,7 +24,7 @@ export default function TimeLogDialog({ open, onOpenChange, onLogAdded }: TimeLo
             Add Time Record
           </DialogTitle>
         </DialogHeader>
-        <TimeLogForm onLogAdded={handleLogAdded} />
+        <TimeLogForm onLogAdded={handleLogAdded} defaultDate={defaultDate} />
       </DialogContent>
     </Dialog>
   )

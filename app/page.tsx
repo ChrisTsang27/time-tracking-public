@@ -13,6 +13,7 @@ import DailyKickoff from '@/components/daily-kickoff'
 import EndOfDayReflection from '@/components/end-of-day-reflection'
 import QuickStats from '@/components/quick-stats'
 import ExportButton from '@/components/export-button'
+import CalendarView from '@/components/calendar-view'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -186,6 +187,10 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-white mb-4">All Records</h2>
               <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
             </>
+          )}
+
+          {activeView === 'calendar' && (
+            <CalendarView refreshTrigger={refreshTrigger} />
           )}
 
           {activeView === 'projects' && (

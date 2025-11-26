@@ -12,7 +12,7 @@ import { Plus, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { calculateStreak, XP_PER_HOUR } from '@/lib/gamification'
 
-export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) {
+export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: () => void; defaultDate?: string }) {
   const [title, setTitle] = useState('')
   const [hours, setHours] = useState('')
   const [description, setDescription] = useState('')
@@ -21,6 +21,7 @@ export default function TimeLogForm({ onLogAdded }: { onLogAdded: () => void }) 
   const [category, setCategory] = useState('Work')
   const [tags, setTags] = useState('')
   const [date, setDate] = useState(() => {
+    if (defaultDate) return defaultDate
     const d = new Date()
     const year = d.getFullYear()
     const month = String(d.getMonth() + 1).padStart(2, '0')

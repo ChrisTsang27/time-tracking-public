@@ -21,6 +21,7 @@ export default function ExportButton() {
       .from('time_logs')
       .select('*')
       .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
     
     if (error) {
       toast.error('Failed to fetch data for export')
