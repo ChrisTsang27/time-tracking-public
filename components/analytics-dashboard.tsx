@@ -137,17 +137,17 @@ export default function AnalyticsDashboard({ refreshTrigger }: { refreshTrigger:
         <Card className="glass-panel border-blue-500/20 h-full relative overflow-hidden group hover:border-blue-500/40 transition-colors duration-500">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
           <CardHeader className="pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-400" />
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Total Hours
             </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10 p-4">
-            <div className="text-3xl font-bold text-white neon-text tracking-tight">
-              {totalHours.toFixed(1)}<span className="text-xl text-gray-500 font-normal ml-1">h</span>
+            <div className="text-3xl font-bold text-gray-900 dark:text-white neon-text tracking-tight">
+              {totalHours.toFixed(1)}<span className="text-xl text-gray-500 dark:text-gray-400 font-normal ml-1">h</span>
             </div>
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-              <Activity className="w-3 h-3 text-green-400" />
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-1">
+              <Activity className="w-3 h-3 text-green-600 dark:text-green-400" />
               Lifetime productivity
             </p>
           </CardContent>

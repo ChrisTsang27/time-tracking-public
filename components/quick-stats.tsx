@@ -86,8 +86,8 @@ const QuickStats = ({ refreshTrigger }: QuickStatsProps) => {
       value: weeklyHours.toFixed(1),
       unit: 'h',
       icon: Calendar,
-      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-orange))] to-white dark:from-orange-500/10 dark:to-orange-500/5 shadow-[var(--shadow-orange)]',
-      text: 'text-orange-950 dark:text-orange-100',
+      bg: 'bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-500/10 dark:to-orange-500/5 shadow-[var(--shadow-orange)]',
+      text: 'text-orange-900 dark:text-orange-100',
       iconColor: 'text-orange-600 dark:text-orange-400',
       trend: '+12% then last week' // Placeholder trend
     },
@@ -96,8 +96,8 @@ const QuickStats = ({ refreshTrigger }: QuickStatsProps) => {
       value: monthlyHours.toFixed(1),
       unit: 'h',
       icon: TrendingUp,
-      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-green))] to-white dark:from-green-500/10 dark:to-green-500/5 shadow-[var(--shadow-green)]',
-      text: 'text-green-950 dark:text-green-100',
+      bg: 'bg-gradient-to-br from-green-100 to-green-50 dark:from-green-500/10 dark:to-green-500/5 shadow-[var(--shadow-green)]',
+      text: 'text-green-900 dark:text-green-100',
       iconColor: 'text-green-600 dark:text-green-400',
       trend: '3.4% then last month'
     },
@@ -106,8 +106,8 @@ const QuickStats = ({ refreshTrigger }: QuickStatsProps) => {
       value: todayHours.toFixed(1),
       unit: 'h',
       icon: Zap,
-      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-blue))] to-white dark:from-blue-500/10 dark:to-blue-500/5 shadow-[var(--shadow-blue)]',
-      text: 'text-blue-950 dark:text-blue-100',
+      bg: 'bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-500/10 dark:to-blue-500/5 shadow-[var(--shadow-blue)]',
+      text: 'text-blue-900 dark:text-blue-100',
       iconColor: 'text-blue-600 dark:text-blue-400',
       trend: 'Daily target'
     }

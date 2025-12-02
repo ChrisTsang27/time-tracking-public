@@ -92,12 +92,12 @@ export default function CalendarView({ refreshTrigger }: { refreshTrigger: numbe
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white neon-text">Calendar</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white neon-text">Calendar</h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8 border-white/10 hover:bg-white/10">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-[140px] text-center font-medium text-white">
+          <div className="min-w-[140px] text-center font-medium text-gray-900 dark:text-white">
             {format(currentDate, 'MMMM yyyy')}
           </div>
           <Button variant="outline" size="icon" onClick={nextMonth} className="h-8 w-8 border-white/10 hover:bg-white/10">
@@ -140,7 +140,7 @@ export default function CalendarView({ refreshTrigger }: { refreshTrigger: numbe
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
                     "text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full",
-                    isTodayDate ? "bg-blue-500 text-white" : "text-gray-400"
+                    isTodayDate ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400"
                   )}>
                     {format(day, 'd')}
                   </span>
@@ -159,7 +159,7 @@ export default function CalendarView({ refreshTrigger }: { refreshTrigger: numbe
                     <div 
                       key={log.id} 
                       onClick={(e) => handleLogClick(e, log)}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 border border-white/5 text-gray-300 truncate hover:bg-white/20 transition-colors cursor-pointer hover:border-blue-500/30"
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/5 text-gray-700 dark:text-gray-300 truncate hover:bg-gray-200 dark:hover:bg-white/20 transition-colors cursor-pointer hover:border-blue-500/30"
                       title={`${log.title} (${log.hours}h)`}
                     >
                       {log.title || 'Untitled'}
