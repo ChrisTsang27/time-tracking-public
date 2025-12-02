@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { supabase } from '@/lib/supabase'
 import { TimeLog, Invoice, InvoiceItem, InvoiceSettings } from '@/types'
-import { downloadInvoicePDF } from '@/lib/invoice-generator'
+import { downloadInvoicePDF, previewInvoicePDF } from '@/lib/invoice-generator'
 import { toast } from 'sonner'
 import { FileText, Download, ChevronRight, ChevronLeft } from 'lucide-react'
 
@@ -23,6 +23,7 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
   const [settings, setSettings] = useState<InvoiceSettings | null>(null)
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([])
   const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set())
+  const [previewUrl, setPreviewUrl] = useState<string>('')
   
   // Form state
   const [formData, setFormData] = useState({
@@ -215,12 +216,70 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
     }
   }
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 3))
+  const nextStep = () => {
+    if (step === 3) {
+      // Generate preview when moving to step 4
+      generatePreview()
+    }
+    setStep(prev => Math.min(prev + 1, 4))
+  }
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1))
+
+  const generatePreview = () => {
+    try {
+      const selectedLogs = timeLogs.filter(log => selectedLogIds.has(log.id))
+      const total = calculateTotal()
+
+      const mockInvoice: Invoice = {
+        id: 'preview',
+        user_id: 'preview',
+        invoice_number: formData.invoiceNumber,
+        invoice_date: formData.invoiceDate,
+        client_name: formData.clientName,
+        client_reference: formData.clientReference || undefined,
+        from_name: formData.fromName,
+        from_abn: formData.fromAbn || undefined,
+        from_email: formData.fromEmail || undefined,
+        from_phone: formData.fromPhone || undefined,
+        bank_name: formData.bankName || undefined,
+        bank_bsb: formData.bankBsb || undefined,
+        bank_account: formData.bankAccount || undefined,
+        bank_account_name: formData.bankAccountName || undefined,
+        bank_reference: formData.bankReference || undefined,
+        subtotal: total,
+        tax_amount: 0,
+        total_amount: total,
+        currency: formData.currency,
+        notes: formData.notes || undefined,
+        created_at: new Date().toISOString(),
+      } as Invoice
+
+      const mockItems: InvoiceItem[] = selectedLogs.map((log, index) => ({
+        id: `preview-${index}`,
+        invoice_id: 'preview',
+        description: log.title || log.description || 'Time tracking',
+        quantity: Number(log.hours),
+        unit_price: formData.hourlyRate,
+        amount: Number(log.hours) * formData.hourlyRate,
+        time_log_id: log.id,
+        line_order: index,
+        created_at: new Date().toISOString(),
+      } as InvoiceItem))
+
+      const dataUri = previewInvoicePDF({
+        invoice: mockInvoice,
+        items: mockItems,
+      })
+
+      setPreviewUrl(dataUri)
+    } catch (error) {
+      console.error('Error generating preview:', error)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black/95 border-gray-200 dark:border-white/10 backdrop-blur-xl rounded-3xl shadow-xl">
+      <DialogContent className={`${step === 4 ? 'max-w-7xl w-[90vw] h-[95vh]' : 'max-w-3xl max-h-[90vh]'} overflow-y-auto bg-white dark:bg-black/95 border-gray-200 dark:border-white/10 backdrop-blur-xl rounded-3xl shadow-xl`}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 flex items-center gap-2">
             <FileText className="w-6 h-6 text-teal-600 dark:text-blue-400" />
@@ -230,6 +289,7 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
             <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 1 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
             <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 2 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
             <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 3 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+            <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 4 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
           </div>
         </DialogHeader>
 
@@ -432,6 +492,31 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
             </div>
           )}
 
+          {/* Step 4: Preview */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Invoice Preview</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Review your invoice before downloading</p>
+              
+              <div className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden bg-gray-50 dark:bg-black/20 h-[calc(95vh-300px)]">
+                {previewUrl ? (
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-full"
+                    title="Invoice Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
+                    <div className="text-center">
+                      <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Generating preview...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-white/10">
             <Button
@@ -444,12 +529,12 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
               Back
             </Button>
 
-            {step < 3 ? (
+            {step < 4 ? (
               <Button
                 onClick={nextStep}
                 className="bg-teal-600 hover:bg-teal-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
               >
-                Next
+                {step === 3 ? 'Preview' : 'Next'}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             ) : (
@@ -461,7 +546,7 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
                 {loading ? 'Generating...' : (
                   <>
                     <Download className="w-4 h-4 mr-2" />
-                    Generate PDF
+                    Download PDF
                   </>
                 )}
               </Button>
