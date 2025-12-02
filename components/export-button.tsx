@@ -80,16 +80,20 @@ export default function ExportButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="border-white/10 text-white hover:bg-white/10">
+        <Button 
+          id="export-btn"
+          variant="outline" 
+          className="rounded-full border-gray-200 dark:border-white/10 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 bg-white dark:bg-transparent"
+        >
           <Download className="mr-2 h-4 w-4" />
           Export Data
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-black/90 border-white/10 text-white">
-        <DropdownMenuItem onClick={exportToExcel} className="hover:bg-white/10 cursor-pointer">
+      <DropdownMenuContent className="bg-white dark:bg-[#0f0c29] border-gray-200 dark:border-white/10 text-gray-700 dark:text-white shadow-xl rounded-xl">
+        <DropdownMenuItem onClick={exportToExcel} className="hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer rounded-lg m-1">
           Export as Excel (.xlsx)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportToTxt} className="hover:bg-white/10 cursor-pointer">
+        <DropdownMenuItem onClick={exportToTxt} className="hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer rounded-lg m-1">
           Export as Text (.txt)
         </DropdownMenuItem>
       </DropdownMenuContent>

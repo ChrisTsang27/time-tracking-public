@@ -122,16 +122,8 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="glass-panel border-white/10 text-white overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50" />
-        
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="flex items-center gap-2 text-lg font-bold neon-text">
-            <ArrowRight className="w-4 h-4 text-blue-400" />
-            New Entry
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
+      <Card className="border-none shadow-none bg-transparent">
+        <CardContent className="p-0">
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Title</label>
@@ -139,7 +131,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                 placeholder="Task Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                 required
               />
             </div>
@@ -148,10 +140,10 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Category</label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-full h-9 bg-black/30 border-white/10 text-white focus:border-blue-500/50 text-sm">
+                  <SelectTrigger className="w-full h-9 glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 text-sm rounded-lg">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 border-white/10 text-white backdrop-blur-xl">
+                  <SelectContent className="glass-panel border-gray-200 dark:border-white/10 text-gray-900 dark:text-white">
                     <SelectItem value="Work">Work</SelectItem>
                     <SelectItem value="Study">Study</SelectItem>
                     <SelectItem value="Code">Code</SelectItem>
@@ -166,7 +158,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                   placeholder="react, db..."
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                  className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                 />
               </div>
             </div>
@@ -178,7 +170,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                  className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm rounded-lg"
                   required
                 />
               </div>
@@ -190,7 +182,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                   placeholder="0.0"
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                  className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                   required
                 />
               </div>
@@ -203,7 +195,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                   placeholder="9:00 AM"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                  className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                 />
               </div>
               <div className="space-y-1.5">
@@ -212,7 +204,7 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                   placeholder="5:00 PM"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors h-9 text-sm"
+                  className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-blue-500/50 transition-colors h-9 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                 />
               </div>
             </div>
@@ -223,12 +215,12 @@ export default function TimeLogForm({ onLogAdded, defaultDate }: { onLogAdded: (
                 placeholder="Task details..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-black/30 border-white/10 text-white min-h-[80px] focus:border-blue-500/50 transition-colors resize-none text-sm"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white min-h-[80px] focus:border-blue-500/50 transition-colors resize-none text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-lg"
                 required
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full bg-white text-black hover:bg-blue-50 hover:text-blue-900 transition-all duration-300 font-medium h-9 text-sm">
+            <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 font-medium h-9 text-sm rounded-lg">
               <Plus className="mr-2 h-3 w-3" />
               {loading ? 'Processing...' : 'Log Time'}
             </Button>

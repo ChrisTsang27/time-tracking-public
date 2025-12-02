@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TrendingUp, Target, Zap, Calendar } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -9,7 +9,7 @@ interface QuickStatsProps {
   refreshTrigger: number
 }
 
-export default function QuickStats({ refreshTrigger }: QuickStatsProps) {
+const QuickStats = ({ refreshTrigger }: QuickStatsProps) => {
   const [weeklyHours, setWeeklyHours] = useState(0)
   const [monthlyHours, setMonthlyHours] = useState(0)
   const [todayHours, setTodayHours] = useState(0)
@@ -83,65 +83,81 @@ export default function QuickStats({ refreshTrigger }: QuickStatsProps) {
   const stats = [
     {
       label: 'This Week',
-      value: weeklyHours.toFixed(1) + 'h',
+      value: weeklyHours.toFixed(1),
+      unit: 'h',
       icon: Calendar,
-      color: 'from-blue-400 to-cyan-500',
-      bg: 'from-blue-500/10 to-cyan-500/10'
+      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-orange))] to-white dark:from-orange-500/10 dark:to-orange-500/5 shadow-[var(--shadow-orange)]',
+      text: 'text-orange-950 dark:text-orange-100',
+      iconColor: 'text-orange-600 dark:text-orange-400',
+      trend: '+12% then last week' // Placeholder trend
     },
     {
       label: 'This Month',
-      value: monthlyHours.toFixed(1) + 'h',
+      value: monthlyHours.toFixed(1),
+      unit: 'h',
       icon: TrendingUp,
-      color: 'from-purple-400 to-pink-500',
-      bg: 'from-purple-500/10 to-pink-500/10'
+      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-green))] to-white dark:from-green-500/10 dark:to-green-500/5 shadow-[var(--shadow-green)]',
+      text: 'text-green-950 dark:text-green-100',
+      iconColor: 'text-green-600 dark:text-green-400',
+      trend: '3.4% then last month'
     },
     {
       label: 'Today',
-      value: todayHours.toFixed(1) + 'h',
+      value: todayHours.toFixed(1),
+      unit: 'h',
       icon: Zap,
-      color: 'from-yellow-400 to-orange-500',
-      bg: 'from-yellow-500/10 to-orange-500/10'
+      bg: 'bg-gradient-to-br from-[hsl(var(--pastel-blue))] to-white dark:from-blue-500/10 dark:to-blue-500/5 shadow-[var(--shadow-blue)]',
+      text: 'text-blue-950 dark:text-blue-100',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      trend: 'Daily target'
     }
   ]
 
   if (loading) {
     return (
-      <div className="glass-panel p-6 rounded-xl border-white/10 animate-pulse">
-        <div className="h-8 bg-white/5 rounded mb-4"></div>
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-white/5 rounded"></div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 animate-pulse">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 bg-gray-100 dark:bg-white/5 rounded-2xl"></div>
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="glass-panel p-6 rounded-xl border-white/10">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-green-400" />
-        Quick Stats
-      </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <div
-              key={index}
-              className={`p-4 rounded-lg bg-gradient-to-br ${stat.bg} border border-white/10 hover:border-white/20 transition-all flex items-center justify-center`}
-            >
-              <div className="flex flex-col items-center text-center">
-                <Icon className={`w-5 h-5 mb-2 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} />
-                <span className="text-xs text-gray-400 mb-1">{stat.label}</span>
-                <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent tabular-nums`}>
-                  {stat.value}
-                </p>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {stats.map((stat, index) => {
+        const Icon = stat.icon
+        return (
+          <div
+            key={index}
+            className={`p-6 rounded-2xl ${stat.bg} dark:bg-white/5 dark:backdrop-blur-xl dark:border dark:border-white/10 transition-all duration-300 hover:scale-[1.02] cursor-pointer dark:shadow-lg dark:shadow-black/20`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <span className={`text-sm font-medium ${stat.text} opacity-80`}>{stat.label}</span>
+              <div className={`p-2 rounded-full bg-white/50 dark:bg-white/10 ${stat.iconColor}`}>
+                <Icon className="w-4 h-4" />
               </div>
             </div>
-          )
-        })}
-      </div>
+            
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className={`text-3xl font-bold ${stat.text}`}>
+                {stat.value}
+              </span>
+              <span className={`text-lg font-medium ${stat.text} opacity-70`}>
+                {stat.unit}
+              </span>
+            </div>
+
+            <p className={`text-xs ${stat.text} opacity-60`}>
+              {stat.trend}
+            </p>
+          </div>
+        )
+      })}
     </div>
   )
 }
+
+export default React.memo(QuickStats, (prevProps, nextProps) => 
+  prevProps.refreshTrigger === nextProps.refreshTrigger
+)

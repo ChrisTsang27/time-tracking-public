@@ -78,9 +78,9 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return { text: 'Good Morning', icon: Sun, color: 'from-yellow-400 to-orange-500' }
-    if (hour < 18) return { text: 'Good Afternoon', icon: Sun, color: 'from-orange-400 to-pink-500' }
-    return { text: 'Good Evening', icon: Moon, color: 'from-purple-400 to-blue-500' }
+    if (hour < 12) return { text: 'Good Morning', icon: Sun, color: 'from-amber-400 via-orange-400 to-rose-500' }
+    if (hour < 18) return { text: 'Good Afternoon', icon: Sun, color: 'from-sky-400 via-blue-500 to-indigo-500' }
+    return { text: 'Good Evening', icon: Moon, color: 'from-violet-500 via-purple-500 to-fuchsia-500' }
   }
 
   const greeting = getGreeting()
@@ -107,9 +107,9 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
           transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Card className="glass-panel border-white/20 p-8 max-w-lg w-full relative overflow-hidden">
+          <Card className="glass-panel border-white/20 p-8 max-w-lg w-full relative overflow-hidden shadow-2xl shadow-blue-500/10">
             {/* Animated background gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${greeting.color} opacity-5`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${greeting.color} opacity-[0.08] dark:opacity-[0.15]`} />
             
             {/* Sparkle effect */}
             <motion.div
@@ -128,14 +128,19 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="flex items-center gap-3"
+                className="flex items-center gap-4"
               >
-                <div className={`p-3 rounded-full bg-gradient-to-br ${greeting.color} bg-opacity-20 backdrop-blur-sm`}>
-                  <GreetingIcon className={`w-6 h-6 text-transparent bg-clip-text bg-gradient-to-r ${greeting.color}`} />
+                <div className={`p-4 rounded-2xl bg-gradient-to-br ${greeting.color} bg-opacity-20 backdrop-blur-md shadow-lg`}>
+                  <GreetingIcon className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-white">
-                  {greeting.text}, <span className={`bg-gradient-to-r ${greeting.color} bg-clip-text text-transparent`}>{capitalizedName}</span>
-                </h2>
+                <div>
+                  <h2 className="text-3xl font-bold text-white tracking-tight">
+                    {greeting.text},
+                  </h2>
+                  <div className={`text-2xl font-bold bg-gradient-to-r ${greeting.color} bg-clip-text text-transparent`}>
+                    {capitalizedName}
+                  </div>
+                </div>
               </motion.div>
 
               {/* Yesterday's stats */}
@@ -145,7 +150,7 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
                 transition={{ delay: 0.3 }}
                 className="flex items-baseline gap-2"
               >
-                <span className="text-gray-400 text-sm">Yesterday:</span>
+                <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">Yesterday:</span>
                 <span className="text-2xl font-bold text-white">{yesterdayHours.toFixed(1)}h</span>
                 {yesterdayHours > 0 && (
                   <span className="text-green-400 text-sm">✓ Logged</span>
@@ -159,11 +164,11 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
                 transition={{ delay: 0.4 }}
                 className="space-y-3"
               >
-                <p className="text-gray-400 text-sm font-medium">Your plan for today:</p>
+                <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Your plan for today:</p>
                 <div className="space-y-2 pl-4">
                   {tomorrowPlan ? (
-                    <div className="p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                      <p className="text-white text-sm whitespace-pre-wrap">{tomorrowPlan}</p>
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                      <p className="text-gray-100 text-sm whitespace-pre-wrap leading-relaxed">{tomorrowPlan}</p>
                     </div>
                   ) : (
                     <>
@@ -196,15 +201,15 @@ export default function DailyKickoff({ userName, onStartTask, onDismiss }: Daily
                     onStartTask()
                     onDismiss()
                   }}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-blue-500/20 group"
+                  className={`flex-1 bg-gradient-to-r ${greeting.color} text-white shadow-lg group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] rounded-xl h-11`}
                 >
-                  <span>Start First Task</span>
+                  <span className="font-medium">Start First Task</span>
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button
                   onClick={onDismiss}
                   variant="ghost"
-                  className="text-gray-400 hover:text-white hover:bg-white/10"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
                 >
                   Maybe Later
                 </Button>

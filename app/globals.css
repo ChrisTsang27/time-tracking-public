@@ -4,55 +4,111 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 210 40% 98%; /* Off-white for depth */
+    --foreground: 222 47% 11%; /* Deep slate for better readability */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%; /* Slightly darker border */
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
+    --radius: 1rem;
+
+    /* Pastel Colors - More Vibrant & Premium */
+    --pastel-orange: 25 95% 88%;
+    --pastel-green: 140 65% 88%;
+    --pastel-blue: 210 90% 90%;
+    --pastel-purple: 260 85% 90%;
+    --teal-main: 174 100% 29%;
+    
+    /* Colored Shadows - Softer */
+    --shadow-orange: 0 10px 30px -10px rgba(251, 146, 60, 0.2);
+    --shadow-green: 0 10px 30px -10px rgba(74, 222, 128, 0.2);
+    --shadow-blue: 0 10px 30px -10px rgba(96, 165, 250, 0.2);
+    --shadow-purple: 0 10px 30px -10px rgba(168, 85, 247, 0.2);
+    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .dark {
+    --background: 222 47% 11%; /* Deep Slate */
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --radius: 0.75rem;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
 @layer base {
+  :root {
+    /* Enable GPU acceleration for smoother transitions */
+    --transition-smooth: all 350ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
-    background: radial-gradient(circle at 50% 0%, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    min-height: 100vh;
+    transition: background-color 400ms cubic-bezier(0.4, 0.0, 0.2, 1), color 350ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  /* Smooth blur transitions */
+  .dark\\:backdrop-blur-xl,
+  .dark\\:backdrop-blur-md {
+    transition: backdrop-filter 400ms cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 }
 
-/* Animated Background Gradient */
+/* Gradient Background - Only in dark mode */
 .gradient-bg {
+  @apply hidden dark:block;
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   z-index: -1;
-  background: 
-    radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.4), transparent 40%), 
+  background:
+    radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.4), transparent 40%),
     radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.4), transparent 40%),
     radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.3), transparent 40%);
   filter: blur(60px);
   animation: gradient-move 15s ease-in-out infinite alternate;
   pointer-events: none;
+  display: none;
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.dark .gradient-bg {
+  display: block;
+  opacity: 1;
 }
 
 @keyframes gradient-move {
@@ -61,11 +117,20 @@
 }
 
 .glass-panel {
-  @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl;
+  @apply bg-white/70 backdrop-blur-xl border border-gray-200 shadow-xl shadow-gray-200/40 dark:bg-[#1e293b]/60 dark:border-white/10 dark:shadow-2xl dark:shadow-black/20;
+  transition: all 350ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.glass-button {
+  @apply bg-white/50 hover:bg-white/80 border border-gray-200/50 dark:bg-white/10 dark:hover:bg-white/20 dark:border-white/10 backdrop-blur-sm transition-all duration-300 active:scale-95 text-gray-900 dark:text-white;
+}
+
+.glass-input {
+  @apply bg-white/50 border-gray-200/50 focus:border-blue-500/50 focus:bg-white/80 dark:bg-black/20 dark:border-white/10 dark:focus:border-white/20 dark:focus:bg-black/30 transition-all duration-300 placeholder:text-gray-400 dark:placeholder:text-gray-500;
 }
 
 .tech-card {
-  @apply bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/5;
+  @apply bg-white border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300 dark:bg-zinc-900/50 dark:border-zinc-800/50 dark:hover:border-zinc-700/50;
 }
 
 .neon-text {

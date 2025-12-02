@@ -73,9 +73,9 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0f0c29]/95 border-white/10 text-white backdrop-blur-xl sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] glass-panel border-white/20 text-gray-900 dark:text-white rounded-3xl shadow-2xl shadow-blue-500/10">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold neon-text">Edit Entry</DialogTitle>
+          <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">Edit Entry</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -84,7 +84,7 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
               placeholder="Task Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+              className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors rounded-xl"
               required
             />
           </div>
@@ -95,7 +95,7 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors rounded-xl"
                 required
               />
             </div>
@@ -107,7 +107,7 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
                 placeholder="0.0"
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors rounded-xl"
                 required
               />
             </div>
@@ -119,7 +119,7 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
                 placeholder="e.g. 9pm"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors rounded-xl"
               />
             </div>
             <div className="space-y-2">
@@ -128,7 +128,7 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
                 placeholder="e.g. 11pm"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="bg-black/30 border-white/10 text-white focus:border-blue-500/50 transition-colors"
+                className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors rounded-xl"
               />
             </div>
           </div>
@@ -138,12 +138,12 @@ export default function EditLogDialog({ log, open, onOpenChange, onLogUpdated }:
               placeholder="Task details..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-black/30 border-white/10 text-white min-h-[100px] focus:border-blue-500/50 transition-colors resize-none"
+              className="glass-input bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white min-h-[100px] focus:border-teal-500 dark:focus:border-blue-500/50 transition-colors resize-none rounded-xl"
               required
             />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 font-medium">
+            <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-500 dark:hover:to-purple-500 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 font-medium rounded-xl">
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save Changes
             </Button>

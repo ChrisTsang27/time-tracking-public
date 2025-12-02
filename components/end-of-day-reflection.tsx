@@ -132,12 +132,13 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
         <motion.div
           initial={{ scale: 0.9, y: 20, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
-          transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+          exit={{ scale: 0.9, y: 20, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Card className="glass-panel border-white/20 p-8 max-w-lg w-full relative overflow-hidden">
+          <Card className="glass-panel border-white/20 p-8 max-w-lg w-full relative overflow-hidden shadow-2xl shadow-purple-500/10">
             {/* Animated background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-700 opacity-5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50" />
             
             {/* Moon icon */}
             <motion.div
@@ -146,7 +147,7 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
               transition={{ delay: 0.3, duration: 0.6 }}
               className="absolute top-4 right-4"
             >
-              <Moon className="w-6 h-6 text-blue-300" />
+              <Moon className="w-6 h-6 text-indigo-400" />
             </motion.div>
 
             {/* Content */}
@@ -158,10 +159,10 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
                 transition={{ delay: 0.2 }}
               >
                 <h2 className="text-3xl font-bold text-white mb-2">
-                  End of Day <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Review</span>
+                  End of Day <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Review</span>
                 </h2>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-gray-400 text-sm">Today:</span>
+                  <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">Today:</span>
                   <span className="text-2xl font-bold text-white">{todayHours.toFixed(1)}h</span>
                   <span className="text-green-400 text-sm">total</span>
                 </div>
@@ -202,7 +203,7 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
                 transition={{ delay: 0.5 }}
                 className="space-y-3 pt-4 border-t border-white/10"
               >
-                <div className="flex items-center gap-2 text-gray-400">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                   <Lightbulb className="w-4 h-4" />
                   <span className="text-sm font-medium">Anything you want to plan for tomorrow?</span>
                 </div>
@@ -210,7 +211,7 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
                   placeholder="E.g., Write contract draft (1h), Trailer inventory check (0.5h)..."
                   value={tomorrowPlan}
                   onChange={(e) => setTomorrowPlan(e.target.value)}
-                  className="bg-black/30 border-white/10 text-white min-h-[100px] focus:border-blue-500/50 transition-colors resize-none text-sm"
+                  className="glass-input bg-black/5 dark:bg-black/40 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white min-h-[100px] focus:border-blue-500/50 transition-all resize-none text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl p-4"
                 />
               </motion.div>
 
@@ -223,15 +224,15 @@ export default function EndOfDayReflection({ onDismiss }: EndOfDayReflectionProp
               >
                 <Button
                   onClick={handleSavePlan}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-lg shadow-purple-500/20 group"
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/25 group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] rounded-xl h-11"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  <CheckCircle2 className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                   <span>{tomorrowPlan.trim() ? 'Save & Close' : 'Done'}</span>
                 </Button>
                 <Button
                   onClick={onDismiss}
                   variant="ghost"
-                  className="text-gray-400 hover:text-white hover:bg-white/10"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
                 >
                   Skip
                 </Button>

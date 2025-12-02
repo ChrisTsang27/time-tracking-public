@@ -176,7 +176,6 @@ export default function Dashboard() {
 
               {/* Recent Sessions */}
               <div>
-                <h2 className="text-lg font-bold text-white mb-4">Recent Sessions</h2>
                 <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
               </div>
             </>
@@ -184,7 +183,7 @@ export default function Dashboard() {
 
           {activeView === 'records' && (
             <>
-              <h2 className="text-2xl font-bold text-white mb-4">All Records</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">All Records</h2>
               <LogList refreshTrigger={refreshTrigger} onLogUpdated={refreshData} />
             </>
           )}
@@ -195,15 +194,15 @@ export default function Dashboard() {
 
           {activeView === 'projects' && (
             <div className="glass-panel p-8 rounded-xl border-white/10 text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">Projects</h2>
-              <p className="text-gray-400">Project management coming soon...</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Projects</h2>
+              <p className="text-gray-500 dark:text-gray-400">Project management coming soon...</p>
             </div>
           )}
 
           {activeView === 'export' && (
             <div className="glass-panel p-8 rounded-xl border-white/10">
-              <h2 className="text-2xl font-bold text-white mb-4">Export Data</h2>
-              <p className="text-gray-400 mb-6">Download your time logs in various formats</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Export Data</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Download your time logs in various formats</p>
               <ExportButton />
             </div>
           )}

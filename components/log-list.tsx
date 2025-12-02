@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TimeLog } from '@/types'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Trash2, CheckCircle2, Clock, AlertCircle, Edit2, MoreHorizontal } from 'lucide-react'
+import { Trash2, CheckCircle2, Clock, AlertCircle, Edit2, Briefcase, User, MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import EditLogDialog from '@/components/edit-log-dialog'
 import LogDetailsDialog from '@/components/log-details-dialog'
 import { formatDistanceToNow } from 'date-fns'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [viewingLog, setViewingLog] = useState<TimeLog | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
 
   useEffect(() => {
     fetchLogs()
@@ -34,8 +35,8 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
     const { data, error } = await supabase
       .from('time_logs')
       .select('*')
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
+      .order('date', { ascending: sortOrder === 'oldest' })
+      .order('created_at', { ascending: sortOrder === 'oldest' })
 
     if (error) {
       toast.error('Failed to fetch logs')
@@ -44,6 +45,12 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (!loading) {
+      fetchLogs()
+    }
+  }, [sortOrder])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this task?')) return
@@ -83,11 +90,22 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed': return 'text-green-400 border-green-400/30 bg-green-400/10'
-      case 'Blocked': return 'text-red-400 border-red-400/30 bg-red-400/10'
-      default: return 'text-blue-400 border-blue-400/30 bg-blue-400/10'
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return ''
+    if (timeString.toLowerCase().includes('undefined') || timeString.toLowerCase().includes('null')) return ''
+    
+    try {
+      const [hours, minutes] = timeString.split(':')
+      if (!hours || minutes === undefined) return timeString
+      
+      const hour = parseInt(hours)
+      if (isNaN(hour)) return timeString
+      
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const hour12 = hour % 12 || 12
+      return `${hour12}:${minutes} ${ampm}`
+    } catch {
+      return timeString
     }
   }
 
@@ -101,155 +119,233 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-white neon-text">Task Log</h2>
-        <Badge variant="outline" className="border-white/20 text-gray-400">
-          {logs.length} Entries
-        </Badge>
-      </div>
+      <div className="glass-panel rounded-[2rem] p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Task Log</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-xs font-medium text-gray-500 dark:text-gray-400">
+              {logs.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 p-1 rounded-xl">
+            <button 
+              onClick={() => setSortOrder('newest')}
+              className={cn(
+                "text-xs font-medium transition-all px-3 py-1.5 rounded-lg",
+                sortOrder === 'newest' 
+                  ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" 
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              )}
+            >
+              Latest
+            </button>
+            <button 
+              onClick={() => setSortOrder('oldest')}
+              className={cn(
+                "text-xs font-medium transition-all px-3 py-1.5 rounded-lg",
+                sortOrder === 'oldest' 
+                  ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" 
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+              )}
+            >
+              Oldest
+            </button>
+          </div>
+        </div>
 
-      <div className="glass-panel rounded-xl border-white/10 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/5">
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Task</th>
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Category</th>
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Hours</th>
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Time</th>
-                <th className="text-left p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="text-right p-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, index) => (
-                <tr
-                  key={log.id}
-                  onClick={() => {
-                    setViewingLog(log)
-                    setIsViewDialogOpen(true)
-                  }}
-                  className={cn(
-                    "border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer",
-                    index === 0 && "bg-blue-500/5"
-                  )}
-                >
-                  <td className="p-3">
-                    <span className="text-xs font-mono text-gray-500">#{index + 1}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white line-clamp-1">{log.title || 'Untitled Task'}</span>
-                        {index === 0 && (
-                          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/50 text-[9px] px-1 py-0 h-4">
-                            NEW
-                          </Badge>
-                        )}
-                      </div>
-                      {log.description && (
-                        <p className="text-xs text-gray-400 line-clamp-1">{log.description}</p>
-                      )}
-                      {log.tags && log.tags.length > 0 && (
-                        <div className="flex gap-1 flex-wrap">
-                          {log.tags.slice(0, 3).map((tag, i) => (
-                            <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-white/10 text-gray-500">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 hidden md:table-cell">
-                    {log.category && (
-                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-white/10 text-white">
-                        {log.category}
-                      </Badge>
+        {/* Table Header */}
+        <div className="hidden md:grid md:grid-cols-[40px_1fr_120px_80px_140px_120px_80px] gap-4 px-4 py-3 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10">
+          <div>#</div>
+          <div>TASK</div>
+          <div>CATEGORY</div>
+          <div>HOURS</div>
+          <div>TIME</div>
+          <div>STATUS</div>
+          <div className="text-right">ACTIONS</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="space-y-2">
+          <AnimatePresence mode="popLayout">
+            {logs.map((log, index) => (
+              <motion.div
+                key={log.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, delay: index * 0.05 }}
+                onClick={() => {
+                  setViewingLog(log)
+                  setIsViewDialogOpen(true)
+                }}
+                className="grid grid-cols-1 md:grid-cols-[40px_1fr_120px_80px_140px_120px_80px] gap-4 items-center p-4 hover:bg-gray-50 dark:hover:bg-white/5 rounded-2xl transition-all duration-200 cursor-pointer group border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+              >
+                {/* # Column */}
+                <div className="hidden md:block text-sm font-medium text-gray-400 dark:text-gray-600">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+
+                {/* TASK Column */}
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105",
+                    log.category === 'Work' ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" :
+                    log.category === 'Personal' ? "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400" :
+                    "bg-gray-50 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400"
+                  )}>
+                    {log.category === 'Work' ? <Briefcase className="w-5 h-5" /> :
+                     log.category === 'Personal' ? <User className="w-5 h-5" /> :
+                     <Clock className="w-5 h-5" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                      {log.title || 'Untitled Task'}
+                    </h3>
+                    {log.description && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+                        {log.description}
+                      </p>
                     )}
-                  </td>
-                  <td className="p-3">
-                    <span className="text-sm font-semibold text-white">{log.hours}h</span>
-                  </td>
-                  <td className="p-3 hidden lg:table-cell">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-blue-300 font-mono">
-                        {log.start_time} - {log.end_time}
-                      </span>
-                      <span className="text-[10px] text-gray-500">
-                        {formatDistanceToNow(new Date(log.created_at || log.date), { addSuffix: true })}
-                      </span>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 md:hidden">
+                      {formatDistanceToNow(new Date(log.created_at || log.date), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* CATEGORY Column */}
+                <div className="hidden md:block">
+                  <span className={cn(
+                    "text-xs font-medium px-2.5 py-1 rounded-lg border",
+                    log.category === 'Work' ? "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400" :
+                    log.category === 'Personal' ? "bg-purple-50 border-purple-100 text-purple-700 dark:bg-purple-500/10 dark:border-purple-500/20 dark:text-purple-400" :
+                    "bg-gray-50 border-gray-100 text-gray-700 dark:bg-gray-500/10 dark:border-gray-500/20 dark:text-gray-400"
+                  )}>
+                    {log.category || 'None'}
+                  </span>
+                </div>
+
+                {/* HOURS Column */}
+                <div className="hidden md:block">
+                  <p className="font-bold text-sm text-gray-900 dark:text-white font-mono">{log.hours}h</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{log.date}</p>
+                </div>
+
+                {/* TIME Column */}
+                <div className="hidden md:block">
+                  {log.start_time && log.end_time ? (
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-1 rounded-md inline-block">
+                      {formatTime(log.start_time)} - {formatTime(log.end_time)}
                     </div>
-                  </td>
-                  <td className="p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
+                </div>
+
+                {/* STATUS Column */}
+                <div className="hidden md:block">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <button className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5",
+                        log.progress === 'Completed' ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400" :
+                        log.progress === 'Blocked' ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400" :
+                        "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400"
+                      )}>
+                        {getStatusIcon(log.progress)}
+                        {log.progress}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="glass-panel border-gray-200 dark:border-white/10 shadow-xl rounded-xl p-1">
+                      {(['In Progress', 'Completed', 'Blocked'] as const).map((status) => (
+                        <DropdownMenuItem
+                          key={status}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStatusUpdate(log, status)
+                          }}
                           className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium border transition-all hover:brightness-110",
-                            getStatusColor(log.progress)
+                            "flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg px-2 py-1.5 outline-none",
+                            log.progress === status && "bg-gray-100 dark:bg-white/5"
                           )}
                         >
-                          {getStatusIcon(log.progress)}
-                          <span className="hidden sm:inline">{log.progress}</span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#0f0c29]/95 border-white/10 text-white backdrop-blur-xl">
-                        {(['In Progress', 'Completed', 'Blocked'] as const).map((status) => (
-                          <DropdownMenuItem
-                            key={status}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleStatusUpdate(log, status)
-                            }}
-                            className={cn(
-                              "flex items-center gap-2 cursor-pointer hover:bg-white/10",
-                              log.progress === status && "bg-white/5"
-                            )}
-                          >
-                            <div className={cn("p-1 rounded-full", 
-                              status === 'Completed' ? "text-green-400 bg-green-400/10" :
-                              status === 'Blocked' ? "text-red-400 bg-red-400/10" :
-                              "text-blue-400 bg-blue-400/10"
-                            )}>
-                              {getStatusIcon(status)}
-                            </div>
-                            <span>{status}</span>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setEditingLog(log)
-                          setIsEditDialogOpen(true)
-                        }}
-                        className="p-1.5 rounded hover:bg-blue-400/10 text-gray-500 hover:text-blue-400 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(log.id)
-                        }}
-                        className="p-1.5 rounded hover:bg-red-400/10 text-gray-500 hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                          <div className={cn("p-1 rounded-full", 
+                            status === 'Completed' ? "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-400/10" :
+                            status === 'Blocked' ? "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-400/10" :
+                            "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-400/10"
+                          )}>
+                            {getStatusIcon(status)}
+                          </div>
+                          <span className="text-sm">{status}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* ACTIONS Column */}
+                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingLog(log)
+                      setIsEditDialogOpen(true)
+                    }}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-primary dark:hover:text-primary transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(log.id)
+                    }}
+                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Mobile: Show hours and status at bottom */}
+                <div className="flex md:hidden items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-gray-900 dark:text-white">{log.hours}h</span>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-xs font-medium",
+                      log.progress === 'Completed' ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400" :
+                      log.progress === 'Blocked' ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400" :
+                      "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400"
+                    )}>
+                      {log.progress}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingLog(log)
+                        setIsEditDialogOpen(true)
+                      }}
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(log.id)
+                      }}
+                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-500 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
         
         {!loading && logs.length === 0 && (

@@ -18,9 +18,9 @@ export default function TimeLogDialog({ open, onOpenChange, onLogAdded, defaultD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-black/95 border-white/10 backdrop-blur-xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-panel border-white/20 p-6 shadow-2xl shadow-blue-500/10">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold neon-text bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+          <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
             Add Time Record
           </DialogTitle>
         </DialogHeader>
