@@ -94,6 +94,11 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
     if (!timeString) return ''
     if (timeString.toLowerCase().includes('undefined') || timeString.toLowerCase().includes('null')) return ''
     
+    // If already contains AM/PM, return as is
+    if (timeString.toLowerCase().includes('am') || timeString.toLowerCase().includes('pm')) {
+      return timeString
+    }
+    
     try {
       const [hours, minutes] = timeString.split(':')
       if (!hours || minutes === undefined) return timeString
@@ -101,9 +106,9 @@ export default function LogList({ refreshTrigger, onLogUpdated }: { refreshTrigg
       const hour = parseInt(hours)
       if (isNaN(hour)) return timeString
       
-      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const ampm = hour >= 12 ? 'pm' : 'am'
       const hour12 = hour % 12 || 12
-      return `${hour12}:${minutes} ${ampm}`
+      return `${hour12}:${minutes}${ampm}`
     } catch {
       return timeString
     }

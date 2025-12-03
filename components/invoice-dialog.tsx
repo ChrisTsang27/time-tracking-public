@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { supabase } from '@/lib/supabase'
 import { TimeLog, Invoice, InvoiceItem, InvoiceSettings } from '@/types'
-import { downloadInvoicePDF, previewInvoicePDF } from '@/lib/invoice-generator'
+import { downloadInvoicePDF } from '@/lib/invoice-generator'
 import { toast } from 'sonner'
-import { FileText, Download, ChevronRight, ChevronLeft } from 'lucide-react'
+import { FileText, Download } from 'lucide-react'
+import InvoicePreview from './invoice-preview'
 
 interface InvoiceDialogProps {
   open: boolean
@@ -18,12 +19,12 @@ interface InvoiceDialogProps {
 }
 
 export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps) {
-  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [settings, setSettings] = useState<InvoiceSettings | null>(null)
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([])
   const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set())
-  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [customItems, setCustomItems] = useState<Array<{ id: string; description: string; hours: number }>>([
+    { id: '1', description: '', hours: 0 }
+  ])
   
   // Form state
   const [formData, setFormData] = useState({
@@ -59,7 +60,6 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
       generateInvoiceNumber()
     } else {
       // Reset on close
-      setStep(1)
       setSelectedLogIds(new Set())
     }
   }, [open])
@@ -68,14 +68,13 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('invoice_settings')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
     if (data) {
-      setSettings(data)
       // Pre-fill form with saved settings
       setFormData(prev => ({
         ...prev,
@@ -101,7 +100,7 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('time_logs')
       .select('*')
       .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
@@ -133,13 +132,79 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
 
   const calculateTotal = () => {
     const selectedLogs = timeLogs.filter(log => selectedLogIds.has(log.id))
-    const totalHours = selectedLogs.reduce((sum, log) => sum + Number(log.hours || 0), 0)
+    const timeLogHours = selectedLogs.reduce((sum, log) => sum + Number(log.hours || 0), 0)
+    const customHours = customItems.reduce((sum, item) => sum + Number(item.hours || 0), 0)
+    const totalHours = timeLogHours + customHours
     return totalHours * formData.hourlyRate
   }
 
+  const addCustomItem = () => {
+    setCustomItems([...customItems, { id: Date.now().toString(), description: '', hours: 0 }])
+  }
+
+  const removeCustomItem = (id: string) => {
+    setCustomItems(customItems.filter(item => item.id !== id))
+  }
+
+  const updateCustomItem = (id: string, field: 'description' | 'hours', value: string | number) => {
+    setCustomItems(customItems.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ))
+  }
+
+  // Real-time preview data using useMemo for performance
+  const previewInvoice = useMemo((): Partial<Invoice> => {
+    const total = calculateTotal()
+    return {
+      invoice_number: formData.invoiceNumber,
+      invoice_date: formData.invoiceDate,
+      client_name: formData.clientName,
+      client_reference: formData.clientReference || undefined,
+      from_name: formData.fromName,
+      from_abn: formData.fromAbn || undefined,
+      from_email: formData.fromEmail || undefined,
+      from_phone: formData.fromPhone || undefined,
+      bank_name: formData.bankName || undefined,
+      bank_bsb: formData.bankBsb || undefined,
+      bank_account: formData.bankAccount || undefined,
+      bank_account_name: formData.bankAccountName || undefined,
+      bank_reference: formData.bankReference || undefined,
+      subtotal: total,
+      tax_amount: 0,
+      total_amount: total,
+      currency: formData.currency,
+      notes: formData.notes || undefined,
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, selectedLogIds, timeLogs])
+
+  const previewItems = useMemo(() => {
+    const selectedLogs = timeLogs.filter(log => selectedLogIds.has(log.id))
+    const timeLogItems = selectedLogs.map(log => ({
+      description: log.title || log.description || 'Time tracking',
+      quantity: Number(log.hours),
+      unit_price: formData.hourlyRate,
+      amount: Number(log.hours) * formData.hourlyRate,
+    }))
+    
+    const customItemsList = customItems
+      .filter(item => item.description.trim() && item.hours > 0)
+      .map(item => ({
+        description: item.description,
+        quantity: Number(item.hours),
+        unit_price: formData.hourlyRate,
+        amount: Number(item.hours) * formData.hourlyRate,
+      }))
+    
+    return [...timeLogItems, ...customItemsList]
+  }, [selectedLogIds, timeLogs, formData.hourlyRate, customItems])
+
   const handleGenerateInvoice = async () => {
-    if (!formData.invoiceNumber || !formData.clientName || selectedLogIds.size === 0) {
-      toast.error('Please fill in required fields and select time logs')
+    const hasTimeLogs = selectedLogIds.size > 0
+    const hasCustomItems = customItems.some(item => item.description.trim() && item.hours > 0)
+    
+    if (!formData.invoiceNumber || !formData.clientName || (!hasTimeLogs && !hasCustomItems)) {
+      toast.error('Please fill in required fields and select time logs or add custom items')
       return
     }
 
@@ -183,8 +248,8 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
 
       if (invoiceError) throw invoiceError
 
-      // Create invoice items
-      const items: Partial<InvoiceItem>[] = selectedLogs.map((log, index) => ({
+      // Create invoice items from time logs
+      const timeLogItems: Partial<InvoiceItem>[] = selectedLogs.map((log, index) => ({
         invoice_id: invoice.id,
         description: log.title || log.description || 'Time tracking',
         quantity: Number(log.hours),
@@ -193,6 +258,21 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
         time_log_id: log.id,
         line_order: index,
       }))
+
+      // Create invoice items from custom items
+      const customInvoiceItems: Partial<InvoiceItem>[] = customItems
+        .filter(item => item.description.trim() && item.hours > 0)
+        .map((item, index) => ({
+          invoice_id: invoice.id,
+          description: item.description,
+          quantity: Number(item.hours),
+          unit_price: formData.hourlyRate,
+          amount: Number(item.hours) * formData.hourlyRate,
+          time_log_id: undefined,
+          line_order: timeLogItems.length + index,
+        }))
+
+      const items = [...timeLogItems, ...customInvoiceItems]
 
       const { error: itemsError } = await supabase
         .from('invoice_items')
@@ -216,343 +296,322 @@ export default function InvoiceDialog({ open, onOpenChange }: InvoiceDialogProps
     }
   }
 
-  const nextStep = () => {
-    if (step === 3) {
-      // Generate preview when moving to step 4
-      generatePreview()
-    }
-    setStep(prev => Math.min(prev + 1, 4))
-  }
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1))
-
-  const generatePreview = () => {
-    try {
-      const selectedLogs = timeLogs.filter(log => selectedLogIds.has(log.id))
-      const total = calculateTotal()
-
-      const mockInvoice: Invoice = {
-        id: 'preview',
-        user_id: 'preview',
-        invoice_number: formData.invoiceNumber,
-        invoice_date: formData.invoiceDate,
-        client_name: formData.clientName,
-        client_reference: formData.clientReference || undefined,
-        from_name: formData.fromName,
-        from_abn: formData.fromAbn || undefined,
-        from_email: formData.fromEmail || undefined,
-        from_phone: formData.fromPhone || undefined,
-        bank_name: formData.bankName || undefined,
-        bank_bsb: formData.bankBsb || undefined,
-        bank_account: formData.bankAccount || undefined,
-        bank_account_name: formData.bankAccountName || undefined,
-        bank_reference: formData.bankReference || undefined,
-        subtotal: total,
-        tax_amount: 0,
-        total_amount: total,
-        currency: formData.currency,
-        notes: formData.notes || undefined,
-        created_at: new Date().toISOString(),
-      } as Invoice
-
-      const mockItems: InvoiceItem[] = selectedLogs.map((log, index) => ({
-        id: `preview-${index}`,
-        invoice_id: 'preview',
-        description: log.title || log.description || 'Time tracking',
-        quantity: Number(log.hours),
-        unit_price: formData.hourlyRate,
-        amount: Number(log.hours) * formData.hourlyRate,
-        time_log_id: log.id,
-        line_order: index,
-        created_at: new Date().toISOString(),
-      } as InvoiceItem))
-
-      const dataUri = previewInvoicePDF({
-        invoice: mockInvoice,
-        items: mockItems,
-      })
-
-      setPreviewUrl(dataUri)
-    } catch (error) {
-      console.error('Error generating preview:', error)
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${step === 4 ? 'max-w-7xl w-[90vw] h-[95vh]' : 'max-w-3xl max-h-[90vh]'} overflow-y-auto bg-white dark:bg-black/95 border-gray-200 dark:border-white/10 backdrop-blur-xl rounded-3xl shadow-xl`}>
-        <DialogHeader>
+      <DialogContent 
+        className="!max-w-[95vw] lg:!max-w-[90vw] xl:!max-w-[85vw] w-full bg-white dark:bg-slate-900/95 border-gray-200 dark:border-white/10 backdrop-blur-xl rounded-3xl shadow-xl p-0" 
+        style={{ height: '90vh', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-slate-700/50">
           <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 flex items-center gap-2">
             <FileText className="w-6 h-6 text-teal-600 dark:text-blue-400" />
-            Generate Invoice
+            Generate Invoice - Live Preview
           </DialogTitle>
-          <div className="flex gap-2 mt-4">
-            <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 1 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 2 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 3 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-colors ${step >= 4 ? 'bg-teal-500 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-          </div>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-6 mt-4">
-          {/* Step 1: Invoice Details */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Invoice Details</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
+        {/* Main content: Form + Preview */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          {/* Left side: Form (scrollable) */}
+          <div className="flex-1 overflow-y-scroll p-6 lg:border-r border-gray-200 dark:border-slate-700/50">
+              <div className="space-y-6">
+                {/* Invoice Details Section */}
+                <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Invoice Details</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Invoice Number *</Label>
+                    <Input
+                      value={formData.invoiceNumber}
+                      onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Invoice Date *</Label>
+                    <Input
+                      type="date"
+                      value={formData.invoiceDate}
+                      onChange={(e) => handleInputChange('invoiceDate', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Invoice Number *</Label>
+                  <Label className="text-gray-700 dark:text-gray-300">Client Name *</Label>
                   <Input
-                    value={formData.invoiceNumber}
-                    onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                    value={formData.clientName}
+                    onChange={(e) => handleInputChange('clientName', e.target.value)}
                     className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
                   />
                 </div>
+
                 <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Invoice Date *</Label>
+                  <Label className="text-gray-700 dark:text-gray-300">Client Reference</Label>
                   <Input
-                    type="date"
-                    value={formData.invoiceDate}
-                    onChange={(e) => handleInputChange('invoiceDate', e.target.value)}
+                    value={formData.clientReference}
+                    onChange={(e) => handleInputChange('clientReference', e.target.value)}
                     className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div>
-                <Label className="text-gray-700 dark:text-gray-300">Client Name *</Label>
-                <Input
-                  value={formData.clientName}
-                  onChange={(e) => handleInputChange('clientName', e.target.value)}
-                  className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <Label className="text-gray-700 dark:text-gray-300">Client Reference</Label>
-                <Input
-                  value={formData.clientReference}
-                  onChange={(e) => handleInputChange('clientReference', e.target.value)}
-                  className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Select Time Logs + Business/Bank Details */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">Select Time Logs</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {timeLogs.map(log => (
-                    <label
-                      key={log.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedLogIds.has(log.id)}
-                        onChange={() => toggleLog(log.id)}
-                        className="w-4 h-4"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 dark:text-white">{log.title || log.description}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {log.date} • {log.hours}h
-                        </div>
+              {/* Custom Items Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Custom Items</h3>
+                  <Button
+                    type="button"
+                    onClick={addCustomItem}
+                    variant="outline"
+                    size="sm"
+                    className="text-sm"
+                  >
+                    + Add Item
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  {customItems.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-[1fr_auto_auto] gap-3 items-start">
+                      <div>
+                        <Label className="text-gray-700 dark:text-gray-300 text-xs">Description</Label>
+                        <Input
+                          value={item.description}
+                          onChange={(e) => updateCustomItem(item.id, 'description', e.target.value)}
+                          placeholder="e.g., Freelance work"
+                          className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                        />
                       </div>
-                    </label>
+                      <div className="w-24">
+                        <Label className="text-gray-700 dark:text-gray-300 text-xs">Hours</Label>
+                        <Input
+                          type="number"
+                          value={item.hours || ''}
+                          onChange={(e) => updateCustomItem(item.id, 'hours', Number(e.target.value))}
+                          placeholder="0"
+                          min="0"
+                          step="0.5"
+                          className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      {customItems.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => removeCustomItem(item.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="mt-6 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Hourly Rate</Label>
-                  <Input
-                    type="number"
-                    value={formData.hourlyRate}
-                    onChange={(e) => handleInputChange('hourlyRate', Number(e.target.value))}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
+                {/* Time Logs Selection */}
+                <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Select Time Logs</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-lg p-3">
+                  {timeLogs.length > 0 ? (
+                    timeLogs.map(log => (
+                      <label
+                        key={log.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedLogIds.has(log.id)}
+                          onChange={() => toggleLog(log.id)}
+                          className="w-4 h-4"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 dark:text-white">{log.title || log.description}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {log.date} • {log.hours}h
+                          </div>
+                        </div>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-400 py-4">No time logs available</p>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Currency</Label>
-                  <Input
-                    value={formData.currency}
-                    onChange={(e) => handleInputChange('currency', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
 
-              <div className="p-4 bg-teal-50 dark:bg-blue-500/10 rounded-lg">
-                <div className="text-sm text-gray-600 dark:text-gray-300">Selected: {selectedLogIds.size} logs</div>
-                <div className="text-2xl font-bold text-teal-600 dark:text-blue-400 mt-1">
-                  {formData.currency} {calculateTotal().toFixed(2)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Business/Bank Details */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Your Business Details</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">From (Name)</Label>
-                  <Input
-                    value={formData.fromName}
-                    onChange={(e) => handleInputChange('fromName', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">ABN</Label>
-                  <Input
-                    value={formData.fromAbn}
-                    onChange={(e) => handleInputChange('fromAbn', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Email</Label>
-                  <Input
-                    value={formData.fromEmail}
-                    onChange={(e) => handleInputChange('fromEmail', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Phone</Label>
-                  <Input
-                    value={formData.fromPhone}
-                    onChange={(e) => handleInputChange('fromPhone', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white mt-6">Bank Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Bank Name</Label>
-                  <Input
-                    value={formData.bankName}
-                    onChange={(e) => handleInputChange('bankName', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">BSB</Label>
-                  <Input
-                    value={formData.bankBsb}
-                    onChange={(e) => handleInputChange('bankBsb', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Account Number</Label>
-                  <Input
-                    value={formData.bankAccount}
-                    onChange={(e) => handleInputChange('bankAccount', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-700 dark:text-gray-300">Account Name</Label>
-                  <Input
-                    value={formData.bankAccountName}
-                    onChange={(e) => handleInputChange('bankAccountName', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-gray-700 dark:text-gray-300">Payment Reference</Label>
-                  <Input
-                    value={formData.bankReference}
-                    onChange={(e) => handleInputChange('bankReference', e.target.value)}
-                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-gray-700 dark:text-gray-300">Notes (optional)</Label>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Preview */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Invoice Preview</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Review your invoice before downloading</p>
-              
-              <div className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden bg-gray-50 dark:bg-black/20 h-[calc(95vh-300px)]">
-                {previewUrl ? (
-                  <iframe
-                    src={previewUrl}
-                    className="w-full h-full"
-                    title="Invoice Preview"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-600">
-                    <div className="text-center">
-                      <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Generating preview...</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Hourly Rate</Label>
+                    <Input
+                      type="number"
+                      value={formData.hourlyRate}
+                      onChange={(e) => handleInputChange('hourlyRate', Number(e.target.value))}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Currency</Label>
+                    <Input
+                      value={formData.currency}
+                      onChange={(e) => handleInputChange('currency', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-teal-50 dark:bg-blue-500/10 rounded-lg">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Selected: {selectedLogIds.size} logs
+                    {customItems.filter(item => item.description.trim() && item.hours > 0).length > 0 && 
+                      ` + ${customItems.filter(item => item.description.trim() && item.hours > 0).length} custom items`
+                    }
+                  </div>
+                  <div className="text-2xl font-bold text-teal-600 dark:text-blue-400 mt-1">
+                    {formData.currency} {calculateTotal().toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+                {/* Business Details Section */}
+                <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Your Business Details</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">From (Name)</Label>
+                    <Input
+                      value={formData.fromName}
+                      onChange={(e) => handleInputChange('fromName', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">ABN</Label>
+                    <Input
+                      value={formData.fromAbn}
+                      onChange={(e) => handleInputChange('fromAbn', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Email</Label>
+                    <Input
+                      value={formData.fromEmail}
+                      onChange={(e) => handleInputChange('fromEmail', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Phone</Label>
+                    <Input
+                      value={formData.fromPhone}
+                      onChange={(e) => handleInputChange('fromPhone', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+                {/* Bank Details Section */}
+                <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Bank Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Bank Name</Label>
+                    <Input
+                      value={formData.bankName}
+                      onChange={(e) => handleInputChange('bankName', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">BSB</Label>
+                    <Input
+                      value={formData.bankBsb}
+                      onChange={(e) => handleInputChange('bankBsb', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Account Number</Label>
+                    <Input
+                      value={formData.bankAccount}
+                      onChange={(e) => handleInputChange('bankAccount', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 dark:text-gray-300">Account Name</Label>
+                    <Input
+                      value={formData.bankAccountName}
+                      onChange={(e) => handleInputChange('bankAccountName', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-gray-700 dark:text-gray-300">Payment Reference</Label>
+                    <Input
+                      value={formData.bankReference}
+                      onChange={(e) => handleInputChange('bankReference', e.target.value)}
+                      className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+                {/* Notes Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Notes (Optional)</h3>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    className="mt-1 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white"
+                    rows={3}
+                    placeholder="Add additional notes or instructions..."
+                  />
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-white/10">
+          {/* Right side: Live Preview */}
+          <div className="flex-1 overflow-y-scroll bg-gray-100 dark:bg-slate-800/40 p-6">
+            <div className="mb-4">
+              <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">Live Preview</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Preview updates in real-time</p>
+            </div>
+            <InvoicePreview
+              invoice={previewInvoice}
+              items={previewItems}
+              currency={formData.currency}
+            />
+          </div>
+        </div>
+
+        {/* Footer with action buttons */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-slate-700/50 flex justify-end gap-3">
             <Button
-              onClick={prevStep}
-              disabled={step === 1}
+              onClick={() => onOpenChange(false)}
               variant="outline"
               className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
+              Cancel
             </Button>
-
-            {step < 4 ? (
-              <Button
-                onClick={nextStep}
-                className="bg-teal-600 hover:bg-teal-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
-              >
-                {step === 3 ? 'Preview' : 'Next'}
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleGenerateInvoice}
-                disabled={loading || selectedLogIds.size === 0}
-                className="bg-teal-600 hover:bg-teal-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
-              >
-                {loading ? 'Generating...' : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            )}
+            <Button
+              onClick={handleGenerateInvoice}
+              disabled={loading || (!selectedLogIds.size && !customItems.some(item => item.description.trim() && item.hours > 0)) || !formData.clientName}
+              className="bg-teal-600 hover:bg-teal-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+            >
+              {loading ? 'Generating...' : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </>
+              )}
+            </Button>
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   )
